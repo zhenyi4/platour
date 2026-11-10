@@ -2,6 +2,25 @@
 
 The 30 model repositories and three dataset repositories (Qwen3, DAPO and DeepCoder) are public in the [PLatour collection](https://huggingface.co/collections/zen-E/platour-6aee0586243e1c15a5dd2cc4). All 236 release files were checked against remote identities, and every repository was verified without authentication. Repository URLs, publication revisions and formats are recorded in [`hf_public_release.json`](hf_public_release.json). Preparation and audit commands themselves do not upload anything.
 
+## Runtime usage documentation
+
+The model and dataset cards use the current [project installation](../README.md#getting-started).
+Model examples use the active Python without a decoder-path argument. Dataset
+cards link to the same setup and show a signed-input download command.
+Full/LoRA cards distinguish their original export-check versions from the current
+runtime instructions.
+
+The README-only update revisions and verification results are recorded in
+[`hf_runtime_docs_update.json`](hf_runtime_docs_update.json). The update preserves
+all other remote file identities, including weights, configurations, tokenizers,
+dataset payloads and manifests. The model/configuration hashes and pinned dataset
+revisions used by the download loaders are unchanged.
+
+`qwen35.release_card` supplies the model usage sections and dataset CLI guidance;
+the dataset export template in `scripts/prepare_hf_release.py` uses the same
+guidance. Refreshing an existing card preserves its YAML metadata, split
+declarations, provenance, source notices and citations.
+
 ## Prepare and inspect
 
 Run from the checkout root, using a fresh output directory:
@@ -125,6 +144,6 @@ python scripts/verify_hf_exports.py lora --directory <adapter-export> \
 
 The verifier performs real standard API loading, exact original tensor comparisons and short synthetic-prompt forward/generation checks. For LoRA it also compares FP32 logits with the project's original `LoRALinear` implementation on the identical frozen backbone. FP32 comparison does not establish identical rounding in BF16 or across different device kernels. These checks are not benchmark evaluation. Verification reports stay outside upload directories.
 
-The conversion/loading environment uses Torch 2.15.0, Transformers 5.22.1 and PEFT 0.21.2. PEFT is needed only for LoRA conversion/loading. The pinned base revision above is the present-day export/verification dependency; it is not automatically evidence of a historical training revision.
+The recorded export/loading checks used Torch 2.15.0, Transformers 5.22.1 and PEFT 0.21.2. Current installation instructions are in the [environment guide](ENVIRONMENT.md); the original verification record retains its actual versions. PEFT is needed only for LoRA conversion/loading. The pinned base revision above is the present-day export/verification dependency; it is not automatically evidence of a historical training revision.
 
 All four real checkpoints passed local standard API loading, original tensor comparisons and short synthetic-prompt generation. Both LoRA exports matched the original project forward with maximum absolute FP32 logit difference 0 on the checked input. See [`hf_standard_validation.json`](hf_standard_validation.json) for the recorded evidence and limitations. All four standard packages are now public; [`hf_public_release.json`](hf_public_release.json) records their publication revisions.

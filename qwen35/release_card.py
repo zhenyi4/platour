@@ -42,13 +42,9 @@ python3.11 scripts/install_environment.py
 source .venv/bin/activate
 ```
 
-HF training, vLLM generation and scoring share this environment. The installer
-includes the pinned Qwen3.5 extras and checks dependencies and GPU kernels.
-No `PLATOUR_VLLM_PYTHON` setting or `vllm_python` argument is needed.
-`--vllm-python` remains an optional interpreter override for existing deployments.
-Use `python scripts/install_environment.py --check-only` to repeat verification.
-The checks exercise small kernels; they do not load this checkpoint or certify
-FP8 senders. See the [environment guide]({PROJECT_URL}/blob/main/AGENT.md#setup).
+Training, generation and scoring use the active Python. The examples below need
+no `vllm_python` argument. See the [environment guide]({PROJECT_URL}/blob/main/docs/ENVIRONMENT.md)
+for installation options, runtime checks and compatibility details.
 '''
 
 
@@ -160,7 +156,7 @@ def standard_generation(record):
             'There is no vision encoder. The exported input embeddings and output head\n'
             'remain independent, preserving the original BF16 tensors.\n')
     return ('## Generate an answer with Transformers\n\n' + note + '\n'
-            'Activate the shared project environment from the setup section below.\n'
+            'Activate the project environment from the setup section above.\n'
             'It includes Transformers and PEFT for this standard loading route.\n\n'
             '```python\n' + '\n'.join(lines) + '\n```\n\n'
             'This short custom-prompt example does not reproduce the benchmark protocol.\n'
@@ -248,7 +244,7 @@ def usage_sections(record, *, standard_format=False):
              f'[Model collection](https://huggingface.co/collections/zen-E/platour) · '
              f'[Agent/API guide]({PROJECT_URL}/blob/main/AGENT.md)\n\n')
     if standard_format:
-        return links + standard_generation(record) + '\n' + project_setup() + '\n' + benchmark_sections(record)
+        return links + project_setup() + '\n' + standard_generation(record) + '\n' + benchmark_sections(record)
     if record['method'] in ('full', 'lora'):
         raise ValueError('Use the standard published Full/LoRA card, not legacy project packaging')
     return links + project_setup() + '\n' + project_generation(record) + '\n' + benchmark_sections(record)
@@ -257,6 +253,19 @@ def usage_sections(record, *, standard_format=False):
 def update_usage_sections(card, record):
     """Replace usage prose only, preserving metadata, provenance and citation text."""
     standard = record['id'] in (23, 24, 29, 30)
+    links = f'[Code]({PROJECT_URL})'
+    if links in card:
+        # Published cards already have expanded usage sections. Replace exactly
+        # that block; keep front matter, paper, provenance and citations intact.
+        end = ('## Export dependency and scope\n' if standard else
+               '## Evaluation provenance\n')
+        if card.count(links) != 1 or card.count(end) != 1:
+            raise ValueError('Expected one published usage block and provenance section')
+        start, stop = card.index(links), card.index(end)
+        if stop <= start:
+            raise ValueError('Published provenance must follow the usage block')
+        return (card[:start] + usage_sections(record, standard_format=standard).rstrip()
+                + '\n\n' + card[stop:])
     start = '\n## Load\n' if standard else '\n## Loading\n'
     end = '\n## Export dependency and scope\n' if standard else '\n## Reproducibility and licensing\n'
     if card.count(start) != 1 or card.count(end) != 1:
@@ -269,6 +278,43 @@ def update_usage_sections(card, record):
         provenance = '\n## Evaluation provenance\n' + notice.rstrip() + '\n'
     return (head.rstrip() + '\n\n' + usage_sections(record, standard_format=standard).rstrip()
             + '\n' + provenance + end + tail)
+
+
+def dataset_usage(group):
+    identifier = {'qwen3': 11, 'dapo': 19, 'deepcoder': 26}[group]
+    family = 'qwen3' if group == 'qwen3' else 'qwen35'
+    body = f'''## Use with PLatour
+
+For the project training/evaluation CLI, follow the
+[installation guide]({PROJECT_URL}#getting-started) and activate the project
+environment. From the checkout root, download and verify one experiment's inputs:
+
+```sh
+platour-exps download-data --experiment {identifier}
+```
+
+Training and evaluation also download missing signed inputs automatically.
+Generation uses the active Python; no separate decoder path is required.
+See the [task recipes]({PROJECT_URL}/blob/main/{family}/README.md) and
+[data guide]({PROJECT_URL}/blob/main/data/README.md) for all experiments,
+split contracts and offline use.
+'''
+    if group == 'deepcoder':
+        body += (f'\nProgramming evaluation also requires the '
+                 f'[coding judge setup]({PROJECT_URL}/blob/main/qwen35/README.md#obtain-and-install-the-coding-judge-ids-2530).\n')
+    return body
+
+
+def update_dataset_usage(card, group):
+    """Add or refresh CLI instructions without regenerating dataset metadata."""
+    start, end = '## Use with PLatour\n', '## Sources and use\n'
+    if card.count(end) != 1 or card.count(start) > 1:
+        raise ValueError('Expected one dataset source section and at most one usage section')
+    stop = card.index(end)
+    begin = card.index(start) if start in card else stop
+    if begin > stop:
+        raise ValueError('Dataset usage must precede source notices')
+    return card[:begin] + dataset_usage(group).rstrip() + '\n\n' + card[stop:]
 
 
 def add_paper_sections(card):

@@ -1,0 +1,456 @@
+{
+  "schema_version": 1,
+  "scope": "README usage updates for the shared project runtime",
+  "model_count": 30,
+  "dataset_count": 3,
+  "changed_files_per_repository": [
+    "README.md"
+  ],
+  "all_repositories_verified_without_authentication": true,
+  "model_weight_and_configuration_identities_unchanged": true,
+  "dataset_payload_and_manifest_identities_unchanged": true,
+  "loader_manifests_unchanged": [
+    "models/manifest.json",
+    "data/hf_manifest.json"
+  ],
+  "public_card_checks": {
+    "python_examples_parse": true,
+    "metadata_and_source_notices_preserved": true,
+    "operational_details_absent": true
+  },
+  "regression_tests": {
+    "unittest": 293,
+    "persistent_worker_pytest": 20
+  },
+  "repositories": [
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-ARC-C",
+      "repo_type": "model",
+      "previous_revision": "010bbee9c84a7ae5bbf58eeeb71f518b9dc349f0",
+      "revision": "85fb8d0435b08e04f69d5a3a3a43e3a8c7fec52d",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "aeaee87c431570042251e8fac809e81516dd26c5785202400389ee4e03511e6e",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-ARC-C/commit/85fb8d0435b08e04f69d5a3a3a43e3a8c7fec52d",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-MMLU-Redux",
+      "repo_type": "model",
+      "previous_revision": "e281e50794241deffcd52bc122d4c012c9028114",
+      "revision": "63878207ae6ba0b9c67367c1e3862fd9c022d6c1",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "65485c171b24c2cfa2a9b69c921226e2fdba95f9fa285334bb28eff5584c9034",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-MMLU-Redux/commit/63878207ae6ba0b9c67367c1e3862fd9c022d6c1",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-Chemistry-NoCoT",
+      "repo_type": "model",
+      "previous_revision": "1590aa1e6bc96fa6538f25f8b75b9e0340b15240",
+      "revision": "3becbca9b0078f48ee32af8b8f37c43e1d4d61b5",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "270f2121d810a1efdacfc6c6e24fd8bfb53ef4a5207662c0e9e597c0cdf5ed15",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-Chemistry-NoCoT/commit/3becbca9b0078f48ee32af8b8f37c43e1d4d61b5",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-Chemistry-CoT",
+      "repo_type": "model",
+      "previous_revision": "31b552bcff8c9d0417126ebae259b0c0ce82a112",
+      "revision": "a0ca8290d47b02b20dd22b5ddf510e70a65ebbd9",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "ad67a503a8d3d2064baa71ef7fe42312e331af21ad2796da8f74430353fcf8d9",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-Chemistry-CoT/commit/a0ca8290d47b02b20dd22b5ddf510e70a65ebbd9",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-GSM8K",
+      "repo_type": "model",
+      "previous_revision": "a47963b9908bb240defee43289863a224cf5f754",
+      "revision": "e07de054d600d65b11379bd7cc3f2aa67354fbac",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "ea4d750ae5c79edc2681e0857e516c5a3a70cf58d1d116e9b7dd1e5d563e7318",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-GSM8K/commit/e07de054d600d65b11379bd7cc3f2aa67354fbac",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-MATH500",
+      "repo_type": "model",
+      "previous_revision": "c02a9abe7f074527a09be6b469b36e5c943d197c",
+      "revision": "9df4b4df53f32244ff5cc12beacfc1894d71948d",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "38584a7630b6499ab3cbf2424e0dfe6f251739cde2c51dcca0878046cf31f534",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-235B-to-1.7B-MATH500/commit/9df4b4df53f32244ff5cc12beacfc1894d71948d",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-ARC-C",
+      "repo_type": "model",
+      "previous_revision": "dc112d1eef0ae1334b98806f05d468068bce8c25",
+      "revision": "2c37d9b712251615014afdf85e2aad842e14ac71",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "1d21679ad0f9ed74fe2e74ab78d5e51950a4718eff89c557285bdae85c2f5366",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-ARC-C/commit/2c37d9b712251615014afdf85e2aad842e14ac71",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-MMLU-Redux",
+      "repo_type": "model",
+      "previous_revision": "5b1e1c4a026647465b03c9cdd5aae96828b6960d",
+      "revision": "adb70b913374a28275298fef6b5754e47cbe4083",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "d4ff0a5b11c9f30e522bf94dd130cb92b59327c1961dc5158865d22c2c4c54fd",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-MMLU-Redux/commit/adb70b913374a28275298fef6b5754e47cbe4083",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-Chemistry-NoCoT",
+      "repo_type": "model",
+      "previous_revision": "8b81cc4af482faa38bc1420128911399a2b3933c",
+      "revision": "73c184a544d3f8da5a7e689449de77126c96011b",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "62ff6b748bc19c187bd2ccd1b1db448945611cac8f765e7afc377f6ec7e0204c",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-Chemistry-NoCoT/commit/73c184a544d3f8da5a7e689449de77126c96011b",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-Chemistry-CoT",
+      "repo_type": "model",
+      "previous_revision": "09df9e2489f77ee5bbe4fe1c2847abd74e658432",
+      "revision": "37262c90b1b1db7190fee93dc88d099fe17c442a",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "3e9895ba9b177bac50fb753e4124daecc740429fbe2c86e6cdeb8e3dd0af23f1",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-Chemistry-CoT/commit/37262c90b1b1db7190fee93dc88d099fe17c442a",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-GSM8K",
+      "repo_type": "model",
+      "previous_revision": "f8f4edf201af30a924668647f262c64a30228971",
+      "revision": "d384b6e1160d11f3ca5a41b1e7d64b4fbd8bcaac",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "8fb8f1ff88764132744842b0d00881b745a3a7027ab3f09a090983f9521c174f",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-GSM8K/commit/d384b6e1160d11f3ca5a41b1e7d64b4fbd8bcaac",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-MATH500",
+      "repo_type": "model",
+      "previous_revision": "e5c91e23c5556a837e4226d5ca170a054278730b",
+      "revision": "dabd9aac3e7ffa1bac4205878ebe378d1b54316a",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "e6f57f83bb02d63d2307030f045d365ced5dba60d94cd823459082b900f4c86f",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SFT-Qwen3-8B-to-1.7B-MATH500/commit/dabd9aac3e7ffa1bac4205878ebe378d1b54316a",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-235B-to-1.7B-Chemistry-CoT",
+      "repo_type": "model",
+      "previous_revision": "ca3e08960cdd03d751f9ace1a6c9aaf3017f3533",
+      "revision": "1157f525a4b5c71d7ed2d0305bf917e3dcdca49c",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "b1b2bb48e34f32e03ff1277f581972c02ad5bb96c35bfa2a45d2ede9d61f6d2a",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-235B-to-1.7B-Chemistry-CoT/commit/1157f525a4b5c71d7ed2d0305bf917e3dcdca49c",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-235B-to-1.7B-GSM8K",
+      "repo_type": "model",
+      "previous_revision": "8f2a9d8fdab8c276678701467ddc7ac55bd0ef75",
+      "revision": "02d90828b889561fc9221b5cb5299ecb24c1c56f",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "3583d892c2abc4ba2d5af0212617d089364b5e35a540fd15897081fde497ec52",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-235B-to-1.7B-GSM8K/commit/02d90828b889561fc9221b5cb5299ecb24c1c56f",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-235B-to-1.7B-MATH500",
+      "repo_type": "model",
+      "previous_revision": "9ee0bece212089856de4e0be85a73c148b478312",
+      "revision": "6629b87be3e6d373fffe698dbbfbecdb389f71ff",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "27d566843652f26dfb546eb6a8cd15ae769be7cc6af9795056dc07806c55e932",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-235B-to-1.7B-MATH500/commit/6629b87be3e6d373fffe698dbbfbecdb389f71ff",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-8B-to-1.7B-Chemistry-CoT",
+      "repo_type": "model",
+      "previous_revision": "ca45bec525bfb341a176cb7f158f8820df096969",
+      "revision": "1ae676924794fc44a455af656ebe54957e48d2f2",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "4c1002a89e86045996c6175500f52fc13d5b2a7e2a28bd4cb138c1c61679d8ce",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-8B-to-1.7B-Chemistry-CoT/commit/1ae676924794fc44a455af656ebe54957e48d2f2",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-8B-to-1.7B-GSM8K",
+      "repo_type": "model",
+      "previous_revision": "782794c5b19fc4fed772c13cfae35485990e1053",
+      "revision": "859a00662c82f350a16da3a7187515dcea34785c",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "77c774d054b9394d3405362e155b3cdc27e90e17f447584a7f9b2663b6a07361",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-8B-to-1.7B-GSM8K/commit/859a00662c82f350a16da3a7187515dcea34785c",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-8B-to-1.7B-MATH500",
+      "repo_type": "model",
+      "previous_revision": "d2407b78c9df3f7f2bdb3c01c8883d5aec0ccf20",
+      "revision": "4d4dd10e0a281e5301b41b9d535aa62290a43bb7",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "f0d098ccd07b5fb7d80b57fc5fe82c8de5e711fb7804aae505261452daa99939",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3-8B-to-1.7B-MATH500/commit/4d4dd10e0a281e5301b41b9d535aa62290a43bb7",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3.5-35B-to-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "1865ef4fd7803400b907f25fac7b60484e1a1120",
+      "revision": "480483af7f63686c6fdef51130ae09322538fbbd",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "aee538861e747e89f32f9f2ef6a37779f5426ea007fe1b14c344e90fa8a74928",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3.5-35B-to-4B-DAPO/commit/480483af7f63686c6fdef51130ae09322538fbbd",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3.5-397B-FP8-to-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "74cc1a8c16103f24dd1a9854aab460384f1fbf88",
+      "revision": "7c1ac1081f3c0b74486ad728b7f0d4ad72cd3401",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "5179987dbd26e22ee32338609ee3fa469ff206f5e087827da1c71ca235177a9b",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3.5-397B-FP8-to-4B-DAPO/commit/7c1ac1081f3c0b74486ad728b7f0d4ad72cd3401",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SC-Qwen3.5-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "ebcd382d52ceaa6b7ab309dbe04aaab4ff968eec",
+      "revision": "0e9246a1e3a31da38aa2c3032954c887b69c2b39",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "2fee6036c1a74055e8c46f91533c664dec240aa47904c7cc0165062331bafc1b",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SC-Qwen3.5-4B-DAPO/commit/0e9246a1e3a31da38aa2c3032954c887b69c2b39",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-VS-Qwen3.5-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "d9f032f99ad759077ff45e1df0cd99d4b670f5a3",
+      "revision": "0751592333bd1fbafbdc20f77f93f3c05a326078",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "2093cada9174e0c1b80d153baf571858b8a0155623b59db73663190642a20b06",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-VS-Qwen3.5-4B-DAPO/commit/0751592333bd1fbafbdc20f77f93f3c05a326078",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-TR-FullGRPO-Qwen3.5-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "04e0fd18f2028a9769400b000d04da9fab9687f7",
+      "revision": "aa6eb2dbfb2396c1f39079be36f72c409e60a9cd",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "fa872d18e6a0a9e367bafec81c797b94c0f11f7960108b67a37b8326abd39c20",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-TR-FullGRPO-Qwen3.5-4B-DAPO/commit/aa6eb2dbfb2396c1f39079be36f72c409e60a9cd",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-TR-LoRA-Qwen3.5-4B-DAPO",
+      "repo_type": "model",
+      "previous_revision": "81c32aa8a18f16fd004c739daf7f6888cb463334",
+      "revision": "58a180b8e9393302f761df9991af4ab4c70dc474",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "b8b823641bfeec240925ecbeec6cb0f01fa57b6e5335c3b6c5034ae9f420da85",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-TR-LoRA-Qwen3.5-4B-DAPO/commit/58a180b8e9393302f761df9991af4ab4c70dc474",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3.5-397B-FP8-to-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "d04048dbc39873e7b01d52cdb271f46681b3a0d3",
+      "revision": "c4b409edce2a6bd246a17c49d18fdd3526431f95",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "73af5f3438b0d7394c5e1292fb50e7950b043de44f0df8e622d15407df7b1f33",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3.5-397B-FP8-to-4B-DeepCoder/commit/c4b409edce2a6bd246a17c49d18fdd3526431f95",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3.5-35B-to-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "5d38a02c309a5b76c9e92642db693caf65e684cc",
+      "revision": "6c57c303aff8f34f88017003aae88d4e923465c4",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "0308f52897ccce6c491b7ac0ae8fec32fb639cda89a17942fc78b3a10c3d1037",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-Qwen3.5-35B-to-4B-DeepCoder/commit/6c57c303aff8f34f88017003aae88d4e923465c4",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-SC-Qwen3.5-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "8d268c7fea35352c5704ae1346c38ba5f9daf62f",
+      "revision": "bf323923b47e2120e6dcd6a79ff14dfe642fe04e",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "33ec86932894548d407ff529d8c0664248b97f2e2d4ffa820cd5e3bf104eb3bc",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-SC-Qwen3.5-4B-DeepCoder/commit/bf323923b47e2120e6dcd6a79ff14dfe642fe04e",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-VS-Qwen3.5-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "871ff25f8edb7ae267a6133c15cfa6687503c109",
+      "revision": "c521678b568ac0854d5561b1dd6d026acb4ad7c8",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "6d84277930458e20ceb53a0da59f85d6521333d1efbd9ccd9559bad646d608b0",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-VS-Qwen3.5-4B-DeepCoder/commit/c521678b568ac0854d5561b1dd6d026acb4ad7c8",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-TR-FullGRPO-Qwen3.5-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "162d3045e27953ce4fe7721cb5288ded3b131e2e",
+      "revision": "09305347f726a9154ecd5c1d91638feeafea4a17",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "e09ceb559d53a7d785aee8ddcacdbe547aead6447194c0a06ed6f5e392413f03",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-TR-FullGRPO-Qwen3.5-4B-DeepCoder/commit/09305347f726a9154ecd5c1d91638feeafea4a17",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-TR-LoRA-Qwen3.5-4B-DeepCoder",
+      "repo_type": "model",
+      "previous_revision": "5670801e03532d071ba4c79ef0d904afe4afa4b1",
+      "revision": "e351d014344ae330a0dc61d1de87b5003bd0aafc",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "daca1d089a37a02f418bdadae84d83f6d73cbf823b1a10e07aba623640053026",
+      "commit_url": "https://huggingface.co/zen-E/PLatour-TR-LoRA-Qwen3.5-4B-DeepCoder/commit/e351d014344ae330a0dc61d1de87b5003bd0aafc",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-DAPO-Data",
+      "repo_type": "dataset",
+      "previous_revision": "baf5081b9674976a3f43779eecb811aa805ea342",
+      "revision": "8e46ecc752cc1d7c31e2bcaf96cdeaae855d6288",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "a451b84cdce90f772c96d9f27f46e7e1864ea82eaefff12edb8f19270bfc4791",
+      "commit_url": "https://huggingface.co/datasets/zen-E/PLatour-DAPO-Data/commit/8e46ecc752cc1d7c31e2bcaf96cdeaae855d6288",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-DeepCoder-Data",
+      "repo_type": "dataset",
+      "previous_revision": "cdfe1e02dfade8229c8fe3f5ebd067c9384bb0ce",
+      "revision": "75ff6d2f9180163f7f378d7d1bcbcd92b14542f2",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "6fcc3a8a2a6f2ffe079abfa8730102a71dc127c00569dff863c0092e6744f844",
+      "commit_url": "https://huggingface.co/datasets/zen-E/PLatour-DeepCoder-Data/commit/75ff6d2f9180163f7f378d7d1bcbcd92b14542f2",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    },
+    {
+      "repo_id": "zen-E/PLatour-Qwen3-Data",
+      "repo_type": "dataset",
+      "previous_revision": "a896cf3ff5c71c477d48ee4e6e8eb5397c3156a7",
+      "revision": "6c8bc452fd67e7fe4e2c4c471c3103a669ce1b69",
+      "changed_files": [
+        "README.md"
+      ],
+      "readme_sha256": "7cfa4bc1eecfcf6ed950c88b2ddeb9921a1a55dbe8147d60b7669fd4ae497afd",
+      "commit_url": "https://huggingface.co/datasets/zen-E/PLatour-Qwen3-Data/commit/6c8bc452fd67e7fe4e2c4c471c3103a669ce1b69",
+      "anonymous_access_verified": true,
+      "non_readme_file_identities_unchanged": true
+    }
+  ]
+}

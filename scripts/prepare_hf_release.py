@@ -233,7 +233,8 @@ def dataset_card(group, namespace, tracked):
     body += ('## Sources and use\n\nConsult the manifest for source identities and checksums and the project task documentation for prompt and scoring contracts. '
              'This collection combines upstream datasets with different licenses. Their original terms continue to apply; '
              'the project code license does not replace the source dataset licenses.\n')
-    return front + body
+    from qwen35.release_card import update_dataset_usage
+    return update_dataset_usage(front + body, group)
 
 
 def prepare(source_root, output, namespace='zen-E', *, update_manifest=False, workers=2):
