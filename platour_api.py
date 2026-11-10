@@ -237,12 +237,12 @@ class PLatourSession:
         with scope:
             if backend == 'vllm':
                 from platour_exps import require_vllm_python
-                from qwen3.vllm_decode import VLLMDecoder
+                from qwen3.vllm_decode import decoder_session
                 if output is None:
                     raise ValueError('Native vLLM validation needs a separate output root')
                 require_vllm_python(vllm_python)
                 Path(output).mkdir(parents=True, exist_ok=True)
-                with VLLMDecoder(self.bridge, Path(output),
+                with decoder_session(self.bridge, Path(output),
                                  max_model_len=max(3072, max(map(lambda r: len(r['prompt_token_ids']), rows)) + cap),
                                  memory_fraction=memory_fraction,
                                  worker_python=str(vllm_python) if vllm_python else None) as decoder:
@@ -270,7 +270,8 @@ class PLatourSession:
     def fit(self, train_data, validation_data, *, output, task=None, objective='sft',
             max_steps=None, epochs=3, smoke=False, batch_size=8, micro_batch=1, learning_rate=None,
             validation_backend=None, validation_samples=1, response_cap=256,
-            vllm_python=None, reward_fn=None, control=None, validation_schedule='auto', checkpoint_interval=0, warmup_steps=None):
+            vllm_python=None, reward_fn=None, control=None, validation_schedule='auto', checkpoint_interval=0, warmup_steps=None,
+            rollout_worker_mode='persistent'):
         """Train P only. Sign optimizer/RNG at validation/recovery points; resume same root.
 
         Training defaults to three complete epochs; SFT restores the final bridge,
@@ -283,19 +284,31 @@ class PLatourSession:
         both including step zero. Explicit 'step' validation is available for debugging.
         ``validation_schedule='epoch'`` records initial and epoch-end validation;
         SFT always uses the final checkpoint, as used by Qwen3 PACT SFT.
+        GRPO reuses one vLLM receiver during fit, sleeping between rollout/validation
+        phases. rollout_worker_mode='restart' retains the previous per-use worker.
         """
-        with reference_sft_numerics() if objective == 'sft' else nullcontext():
+        from qwen3.vllm_decode import training_decoder_scope
+        if objective == 'grpo':
+            train_data, validation_data = load_dataset(train_data), load_dataset(validation_data)
+            scope = training_decoder_scope(self.bridge, rank_output(Path(output) / 'vllm-worker'),
+                max_model_len=max(3072, max(len(row['prompt_token_ids']) for row in
+                    [*train_data, *validation_data]) + response_cap), mode=rollout_worker_mode)
+        else:
+            scope = reference_sft_numerics() if objective == 'sft' else nullcontext()
+        with scope:
             return self._fit(train_data, validation_data, output=output, task=task,
                              objective=objective, max_steps=max_steps, epochs=epochs, smoke=smoke, batch_size=batch_size,
                              micro_batch=micro_batch, learning_rate=learning_rate, warmup_steps=warmup_steps,
                              validation_backend=validation_backend,
                              validation_samples=validation_samples, response_cap=response_cap,
                              vllm_python=vllm_python, reward_fn=reward_fn, control=control,
-                             validation_schedule=validation_schedule, checkpoint_interval=checkpoint_interval)
+                             validation_schedule=validation_schedule, checkpoint_interval=checkpoint_interval,
+                             rollout_worker_mode=rollout_worker_mode)
 
     def _fit(self, train_data, validation_data, *, output, task, objective, max_steps, epochs, smoke,
              batch_size, micro_batch, learning_rate, warmup_steps, validation_backend, validation_samples,
-             response_cap, vllm_python, reward_fn, control, validation_schedule, checkpoint_interval):
+             response_cap, vllm_python, reward_fn, control, validation_schedule, checkpoint_interval,
+             rollout_worker_mode):
         if isinstance(self.bridge.sender, _ConfigOnlySender):
             raise ValueError('DT is inference-only; training requires actual sender weights')
         from training_protocol import training_learning_rate, sft_schedule
@@ -351,6 +364,12 @@ class PLatourSession:
                     'rollout_group_size': 8 if objective == 'grpo' else None,
                     'rollout_sampling': dict(temperature=1., top_p=1., top_k=-1) if objective == 'grpo' else None}
         protocol.update(sft_schedule(objective, max_steps, warmup_steps))
+        if objective == 'grpo':
+            previous = Path(output) / 'protocol.json'
+            legacy_restart = (rollout_worker_mode == 'restart' and previous.is_file()
+                              and 'rollout_worker_mode' not in json.loads(previous.read_text()))
+            if not legacy_restart:
+                protocol['rollout_worker_mode'] = rollout_worker_mode
         if select_best:
             protocol.update(epochs=budget_epochs, steps_per_epoch=steps_per_epoch,
                 selection_policy=('final_sft_checkpoint_v1' if objective == 'sft' else 'validation_best_earliest_tie_v1'), selection_metric=selection_metric,
@@ -1192,11 +1211,11 @@ class Qwen35Session:
 
     def _decoder(self, output, cap, vllm_python, prompt_length):
         from platour_exps import require_vllm_python
-        from qwen35.vllm_decode import VLLMDecoder
+        from qwen35.vllm_decode import decoder_session
         if output is None:
             raise ValueError('Qwen3.5 vLLM needs a private output directory')
         require_vllm_python(vllm_python)
-        return VLLMDecoder(self.case, self.receiver, self._weights(output), output,
+        return decoder_session(self.case, self.receiver, self._weights(output), output,
             actor=self.actor if self.case.method in ('bridge', 'random') else None,
             weight_source='checkpoint' if self._current is not None else 'inference',
             worker_python=vllm_python, max_model_len=max(3072, cap + prompt_length))
@@ -1308,16 +1327,38 @@ class Qwen35Session:
     def fit(self, train_data, validation_data, *, output, objective='grpo',
             max_steps=None, epochs=1, smoke=False, batch_size=64, learning_rate=None,
             validation_backend=None, validation_samples=None, response_cap=16384,
-            vllm_python=None, control=None, warmup_steps=None, validation_schedule='auto'):
-        """Fit the Qwen3.5 GRPO recipe; custom SFT is outside the published experiments.
+            vllm_python=None, control=None, warmup_steps=None, validation_schedule='auto',
+            rollout_worker_mode=None):
+        """Fit independent TRAIN/VAL. Frozen-receiver GRPO reuses a sleeping worker.
 
-        Custom SFT uses LR 1e-5 (full) / 1e-4 (others) and HF held-out NLL,
-        with linear warmup (ceil(10% of steps)) then decay to zero.
-        Explicit learning_rate/warmup_steps override these defaults.
-        GRPO uses constant LR 1e-6 (full) or 1e-5 (other methods). Validation defaults to epoch-end
-        for SFT and the task recipe for GRPO; both include step zero and the final
-        update. Explicit 'step' validation is available for debugging.
+        Set rollout_worker_mode='restart' for the previous per-use lifecycle or
+        legacy resume. Full/LoRA receiver training retains per-use workers.
+        Custom SFT uses HF held-out NLL and a warmup/linear-decay schedule;
+        GRPO uses constant LR and validation accuracy to select its checkpoint.
         """
+        eligible = objective == 'grpo' and self.case.method in ('bridge', 'random')
+        mode = rollout_worker_mode or ('persistent' if eligible else 'restart')
+        if mode not in ('persistent', 'restart') or (mode == 'persistent' and not eligible):
+            raise ValueError('Persistent rollout workers require frozen-receiver GRPO')
+        scope = nullcontext()
+        if eligible:
+            from qwen35.vllm_decode import training_decoder_scope
+            train_data, validation_data = load_dataset(train_data), load_dataset(validation_data)
+            scope = training_decoder_scope(rank_output(Path(output) / 'rollout-worker'),
+                max_model_len=max(3072, response_cap + max(len(row['prompt_token_ids'])
+                    for row in [*train_data, *validation_data])), mode=mode)
+        with scope:
+            return self._fit(train_data, validation_data, output=output, objective=objective,
+                max_steps=max_steps, epochs=epochs, smoke=smoke, batch_size=batch_size,
+                learning_rate=learning_rate, validation_backend=validation_backend,
+                validation_samples=validation_samples, response_cap=response_cap,
+                vllm_python=vllm_python, control=control, warmup_steps=warmup_steps,
+                validation_schedule=validation_schedule, rollout_worker_mode=mode)
+
+    def _fit(self, train_data, validation_data, *, output, objective, max_steps, epochs,
+             smoke, batch_size, learning_rate, validation_backend, validation_samples,
+             response_cap, vllm_python, control, warmup_steps, validation_schedule,
+             rollout_worker_mode):
         from qwen35.cli import train_step
         from training_protocol import budget
         from qwen35.checkpoints import sha256, rng_state, restore_rng
@@ -1360,6 +1401,12 @@ class Qwen35Session:
         config.update(validation_schedule=validation_schedule, validation_steps=val_steps)
         sign_topology(config)
         root = Path(output).absolute()
+        if objective == 'grpo' and self.case.method in ('bridge', 'random'):
+            previous = root / 'protocol.json'
+            legacy_restart = (rollout_worker_mode == 'restart' and previous.is_file()
+                              and 'rollout_worker_mode' not in json.loads(previous.read_text()))
+            if not legacy_restart:
+                config['rollout_worker_mode'] = rollout_worker_mode
         protocol_root(root, config)
         sync_parameters(self.actor.trainable())
         if (root / 'complete.json').is_file():

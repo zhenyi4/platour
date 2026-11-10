@@ -15,33 +15,23 @@ The real-sender and Self-Communication experiments freeze both model copies duri
 
 ## Complete the GPU training environment
 
-After the [base installation](../README.md#getting-started), use the training
-virtualenv's Python to install the supplemental Qwen3.5 dependencies:
+The [default installation](../README.md#getting-started) creates one environment
+for HF training, vLLM generation and scoring. It includes FLA, PEFT, datasets,
+pandas, W&B, build tools and the SHA-verified `causal-conv1d==1.6.2.post1` wheel
+for Linux x86_64, Python 3.11, Torch 2.10, CUDA 12 and CXX11 ABI.
 
 ```sh
-python scripts/install_qwen35_extras.py --dry-run
-python scripts/install_qwen35_extras.py
+python3.11 scripts/install_environment.py
+source .venv/bin/activate
+python scripts/install_environment.py --check-only
 ```
 
-The supplemental [requirements](../requirements/qwen35-extras.txt) include
-`flash-linear-attention`, PEFT, datasets, pandas, W&B and build tools. Existing
-Torch, Transformers, FLA core, TileLang, kernel-loader and CUDA-library versions
-are constrained during installation. The installer also refreshes the editable
-package registration so newly added project modules can be imported.
-
-For Linux x86_64, Python 3.11 and Torch 2.10 with CUDA 12/CXX11 ABI, it installs
-the matching `causal-conv1d==1.6.2.post1` wheel from the
-[official release](https://github.com/Dao-AILab/causal-conv1d/releases/tag/v1.6.2.post1),
-verifying the published SHA-256. This avoids a local CUDA compilation.
-Other ABI combinations must use a matching wheel or
-a compatible source-build toolchain.
-
-Finish jobs using the training environment before installing. Version snapshots
-and the completion receipt are written to `outputs/qwen35-env-install-*`.
-Successful installation includes import checks and a small CUDA convolution
-forward/backward check. `--imports-only` skips the GPU check; that receipt does
-not certify CUDA execution. Repeat verification with `--check-only`.
-The separate vLLM environment and its version choices are not changed.
+The installer checks imports, dependency pins, CUDA convolution forward/backward
+and vLLM FlashAttention. Use a fresh `--venv` directory for installation;
+`--imports-only` skips GPU kernels and does not certify CUDA execution.
+`scripts/install_qwen35_extras.py --check-only` remains available for the HF
+kernel check alone. Interpreter overrides are optional; native training,
+generation and MathVerify scoring all default to the active Python.
 
 The full/LoRA path in vLLM 0.17.1 can JIT-compile
 FlashInfer GDN prefill kernels. An old system CUDA Toolkit can fail here even
@@ -86,7 +76,7 @@ platour-exps evaluate --experiment 19 \
 
 `--weights` accepts an HF repository ID or a local checkpoint file. Omit it to use the repository assigned to the experiment in the manifest. Hub inputs verify both configuration and weight SHA-256 against that experiment; a different experiment's repository is rejected. Private repositories require an authenticated HF account with access. HF backbone IDs download configuration, safetensors and tokenizer files before local loading in both generation backends. To use a particular backbone revision, download that revision separately and pass its local snapshot directory. Training and initialization commands still require local backbone directories.
 
-Evaluation uses native vLLM 0.17.1 by default: real and virtual bridges import the HF prompt's hybrid GDN/KV memory and first sampled token; full receiver and LoRA controls use native vLLM prefill. Use `--vllm-python <vllm-env>/bin/python` for a separate generation runtime, and put `<vllm-env>/bin` on `PATH` so vLLM can invoke its matching `ninja` executable for CUDA kernels. HF answer generation is not available through the public CLI/API. `--run <training-dir>` evaluates the validation-selected checkpoint of a training run instead of the released weights. Programming evaluation additionally takes `--code-cases`, `--official-checker` and `--docker-image`; generated code runs only inside the isolated checker. DeepCoder training also stops *before loading any model* unless the training cases, pinned checker and isolated Docker daemon/image pass preflight. Mathematics uses the final-answer equivalence checker.
+Evaluation uses native vLLM 0.17.1 by default: real and virtual bridges import the HF prompt's hybrid GDN/KV memory and first sampled token; full receiver and LoRA controls use native vLLM prefill. Generation defaults to the active Python; worker launchers put its executable directory on `PATH` for matching kernel build tools. `--vllm-python` remains an optional override. HF answer generation is not available through the public CLI/API. `--run <training-dir>` evaluates the validation-selected checkpoint of a training run instead of the released weights. Programming evaluation additionally takes `--code-cases`, `--official-checker` and `--docker-image`; generated code runs only inside the isolated checker. DeepCoder training also stops *before loading any model* unless the training cases, pinned checker and isolated Docker daemon/image pass preflight. Mathematics uses the final-answer equivalence checker.
 
 ### Standalone evaluation GPU defaults
 
@@ -104,13 +94,13 @@ one-GPU configurations; the 397B default requires at least four GPUs.
 # AIME-135 and its Clean80 subset: eight one-GPU replicas, published 32K cap.
 platour-exps evaluate --experiment 19 \
   --sender Qwen/Qwen3.5-35B-A3B --receiver Qwen/Qwen3.5-4B \
-  --n-gpu 8 --eval-suites aime --vllm-python /path/to/vllm/bin/python \
+  --n-gpu 8 --eval-suites aime \
   --output ./outputs/19-aime-8gpu
 
 # The 397B-FP8 sender: two four-GPU replicas.
 platour-exps evaluate --experiment 20 \
   --sender Qwen/Qwen3.5-397B-A17B-FP8 --receiver Qwen/Qwen3.5-4B \
-  --n-gpu 8 --eval-suites aime --vllm-python /path/to/vllm/bin/python \
+  --n-gpu 8 --eval-suites aime \
   --output ./outputs/20-aime-8gpu
 ```
 
@@ -145,7 +135,7 @@ platour-exps train --experiment 19 \
 # Data parallel: eight GPUs on one machine (use --nnodes/--node-rank/--master-addr for N machines)
 torchrun --nnodes=1 --nproc-per-node=8 -m platour_exps train --experiment 19 \
   --sender <public-35b-sender> --receiver <public-4b-receiver> \
-  --vllm-python <vllm-env>/bin/python --output <new-training-dir>
+  --output <new-training-dir>
 
 # Later: test the validation-best checkpoint of that run again in a new directory
 platour-exps evaluate --experiment 19 \
@@ -171,7 +161,16 @@ counts. PACT `--family qwen35` uses the same collective behavior for DT/IT and
 SC/TR, including API SFT controls. Only rank zero writes shared metadata; each
 rank's RNG is checkpointed. Resume with the same topology. Multi-host torchrun
 needs shared output storage. Do not combine torchrun with `--n-gpu`.
-Portable GRPO still recreates vLLM per update; active-request limits are unchanged.
+Portable frozen-receiver GRPO (bridge/SC/Virtual Sender) reuses sleeping vLLM
+workers across updates. Each rank keeps one engine per runtime budget, so CLI
+rollout and validation retain their separate memory/sequence limits. The API
+normally shares one engine across both phases. Sleep releases GPU weights and
+KV/GDN allocations before HF backward; activation updates the checkpoint identity
+and imports fresh hybrid memory. `--rollout-worker-mode restart` (API
+`rollout_worker_mode="restart"`) selects the previous per-use lifecycle. New
+protocols sign this setting; old signed runs without it can resume explicitly in
+restart mode. Full/LoRA receiver training still recreates workers. Active-request
+limits and historical native backends are unchanged.
 Neither numerical identity nor a speedup factor follows from replica count alone.
 
 Formal training always completes one epoch; the step budget is derived from TRAIN and batch size. Step 0 is the validation baseline, and every scheduled validation point is a candidate: a point becomes the best checkpoint when its accuracy strictly exceeds the best so far (ties keep the earlier step). After the last update, `selection.json` records the validation-best step and every candidate (`test_used_for_selection: false`), and that checkpoint is tested once on the full three-suite benchmark into `<output>/test/summary.json`; `--no-final-test` skips this. The selection is recomputed from the signed validation files, so a resumed run selects the same checkpoint.
@@ -186,7 +185,7 @@ The Hugging Face model checkpoints do not contain judge assets. The 19,074 TRAIN
 
 The judge image is built from `qwen35/lcb_sandbox.Dockerfile` (a digest-pinned `python:3.10-slim` base and `numpy==1.26.4`). The direct `train`/`evaluate` commands accept any image built from it; training binds the image ID into the run identity, so a resume cannot switch judges. The independent API requires `allow_rebuilt_image=True` for an image ID other than `qwen35.judge_service.ORIGINAL_IMAGE`. The shared judge service and the native ID25 trainer use exactly the `ORIGINAL_IMAGE` ID, distributed by the maintainers as a `docker save` archive.
 
-1. Install Docker with a working local daemon on the machine that will execute the **isolated** judge. Run `pip install -e .` from the repository root and retrieve the signed prompts with `platour-exps download-data --experiment 26` (the reconstruction and evaluation commands also download missing prompts automatically). The model and Docker can run on the same machine; a second host is not required for evaluation.
+1. Install Docker with a working local daemon on the machine that will execute the **isolated** judge. Activate the shared environment from the repository root and retrieve the signed prompts with `platour-exps download-data --experiment 26` (the reconstruction and evaluation commands also download missing prompts automatically). The model and Docker can run on the same machine; a second host is not required for evaluation.
 2. Check out the pinned checker/extractor from the [LiveCodeBench repository](https://github.com/LiveCodeBench/LiveCodeBench). The commit and the SHA of **both** `testing_util.py` and the host-side `extraction_utils.py` are pinned in `qwen35/lcb_v6_cases_sha256.json`. From the repository root:
 
    ```sh
@@ -262,7 +261,6 @@ The judge image is built from `qwen35/lcb_sandbox.Dockerfile` (a digest-pinned `
      --receiver /absolute/path/to/Qwen3.5-4B \
      --code-cases "$JUDGE_ROOT/cases" --official-checker "$LCB_CHECKER" \
      --docker-image "$JUDGE_IMAGE" --backend vllm \
-     --vllm-python /absolute/path/to/vllm-env/bin/python \
      --smoke --smoke-cap 512 --output /absolute/path/to/new-private-evaluation-root
    ```
 
@@ -270,7 +268,7 @@ Use the same three judge flags for `platour-exps train` on coding experiments an
 
 **Optional separate Docker host:** if the GPU host has no Docker and both hosts share the same verified files, run `python -m qwen35.judge_service --root <fresh-private-service-root> --cases "$JUDGE_ROOT/cases" --checker "$LCB_CHECKER"` on the Docker host. On GPU clients set `PLATOUR_CODE_JUDGE_SERVICE=<private-service-root>` and `PLATOUR_CODE_JUDGE_EXPERIMENT=25`, `26` or `29`. With one Docker-capable machine, use the direct local mode above.
 
-**Workflow smoke:** `platour-exps train --experiment 26 ... --smoke --backend vllm --vllm-python <generation-python> --output <new-private-root>` (or ID29 without an external sender) uses two TRAIN questions × eight sampled responses for each of two signed optimizer steps, and validates two VAL questions × two responses at steps 0, 1 and 2. `platour-exps evaluate --experiment 26 ... --smoke ...` scores two TEST questions × two in each of LCB/HumanEval/MBPP. Smoke outputs are labelled `smoke_only` and record the generated-token cap (`--smoke-cap`, default 512; full runs use 16,384). Full runs use all 18,873 TRAIN/201 VAL questions and the full test denominators.
+**Workflow smoke:** `platour-exps train --experiment 26 ... --smoke --backend vllm --output <new-private-root>` (or ID29 without an external sender) uses two TRAIN questions × eight sampled responses for each of two signed optimizer steps, and validates two VAL questions × two responses at steps 0, 1 and 2. `platour-exps evaluate --experiment 26 ... --smoke ...` scores two TEST questions × two in each of LCB/HumanEval/MBPP. Smoke outputs are labelled `smoke_only` and record the generated-token cap (`--smoke-cap`, default 512; full runs use 16,384). Full runs use all 18,873 TRAIN/201 VAL questions and the full test denominators.
 
 ## Independent API
 
@@ -280,7 +278,7 @@ For external datasets (rather than a fixed experiment ID), `from platour_api imp
 
 ### IDs 19, 21–24: one eight-GPU machine
 
-`--train-backend historical-native` runs the bundled native Qwen3.5 GRPO trainers (264 updates, native vLLM rollouts). Install the `native-train` optional dependencies (W&B uploads stay disabled) and supply separate HF training, vLLM 0.17.1 (`--vllm-python`) and MathVerify (`--scoring-python`) runtimes. All use the 16,891 signed training questions, the 500 signed validation questions (500 × 4 per validation point, scored by each native trainer's bundled validation protocol), a fresh run directory and native FP32 optimizer/per-rank RNG checkpoints. Each run is supervised in its own process group; a rank failure stops only that run.
+`--train-backend historical-native` runs the bundled native Qwen3.5 GRPO trainers (264 updates, native vLLM rollouts). The default environment includes the native dependencies (W&B uploads stay disabled). HF training, vLLM 0.17.1 and MathVerify use the active Python; `--vllm-python` and `--scoring-python` are optional overrides. All use the 16,891 signed training questions, the 500 signed validation questions (500 × 4 per validation point, scored by each native trainer's bundled validation protocol), a fresh run directory and native FP32 optimizer/per-rank RNG checkpoints. Each run is supervised in its own process group; a rank failure stops only that run.
 
 - **ID 19**: eight single-GPU 35B-A3B → 4B PLatour replicas, monotone layer mapping, group-of-eight vLLM GRPO and the final-`Answer:` metric.
 - **ID 21**: four paired-GPU Self-Communication sender/receiver copies.
@@ -293,34 +291,34 @@ IDs 19, 21 and 22 resume with `--resume-step <signed-validation-step>`, the same
 ```sh
 # Bounded smokes in fresh output directories
 platour-exps train --experiment 19 --sender <public-35b-model> --receiver <public-4b-model> \
-  --train-backend historical-native --smoke --vllm-python <vllm-env>/bin/python \
-  --scoring-python <math-scoring-env>/bin/python --output <fresh-35b-smoke-dir>
+  --train-backend historical-native --smoke \
+  --output <fresh-35b-smoke-dir>
 
 platour-exps train --experiment 21 --sender <public-4b-model> --receiver <public-4b-model> \
-  --train-backend historical-native --smoke --vllm-python <vllm-env>/bin/python \
-  --scoring-python <math-scoring-env>/bin/python --output <fresh-smoke-dir>
+  --train-backend historical-native --smoke \
+  --output <fresh-smoke-dir>
 
 platour-exps init-random --experiment 22 --receiver <public-4b-model> \
   --output <fresh-initial-V.safetensors> --native-statistics-root <fresh-train-only-stats-root>
 platour-exps train --experiment 22 --receiver <public-4b-model> \
   --train-backend historical-native --statistics-root <fresh-train-only-stats-root> \
-  --smoke --vllm-python <vllm-env>/bin/python \
-  --scoring-python <math-scoring-env>/bin/python --output <another-fresh-smoke-dir>
+  --smoke \
+  --output <another-fresh-smoke-dir>
 
 # Full 264-update run and resume (ID 23; use 24 with a different output root for LoRA)
 platour-exps train --experiment 23 --receiver /models/Qwen3.5-4B \
-  --train-backend historical-native --vllm-python /venvs/vllm/bin/python \
-  --scoring-python /venvs/math-verify/bin/python --output /private/new-id23
+  --train-backend historical-native \
+  --output /private/new-id23
 platour-exps train --experiment 23 --receiver /models/Qwen3.5-4B \
-  --train-backend historical-native --vllm-python /venvs/vllm/bin/python \
-  --scoring-python /venvs/math-verify/bin/python --resume-latest --output /private/new-id23
+  --train-backend historical-native \
+  --resume-latest --output /private/new-id23
 ```
 
 Never resume from an inference-only checkpoint or a completed smoke.
 
 ### IDs 20 and 25: two eight-GPU hosts
 
-The 397B-A17B-FP8 sender runs with teacher TP4 over four distributed ranks on two eight-GPU hosts that share the same absolute output and model paths (264 mathematics updates for ID 20, 295 DeepCoder updates for ID 25). `--native-stage plan` is read-only and prints both host-local torchrun commands. On the first host only, `--native-stage prepare` writes the run's source copy, signed TRAIN/VAL inputs and source/protocol SHA receipts (ID 25 also takes `--judge-service-root` from a running `qwen35.judge_service` with the `ORIGINAL_IMAGE` judge). Then, on **both** hosts with `--node-rank 0` / `1`, the same routable node-0 `--master-addr`, the same shared root and the same attempt label, run `probe` (NCCL and shared-storage check), `smoke` and `train`, each with a new attempt label. Per-step bridge, FP32 AdamW and four-rank RNG are signed; `--resume-latest` with a new attempt label continues from the newest complete step, keeping `n`/`n+1` plus validation checkpoints. Install the `native-train` extra in the training Python (`pip install -e ".[native-train]"` with the pins of the main README). The ranks run offline: the first `probe` on node 0 needs Hugging Face Hub access once to cache the complete pinned FP8 expert kernel in `<RUN_ROOT>/runtime_cache/fp8_kernel`, which later stages and node 1 reuse. Before its first update, ID 25 requires a signed two-host probe and smoke and validates all 201 × 16 held-out responses.
+The 397B-A17B-FP8 sender runs with teacher TP4 over four distributed ranks on two eight-GPU hosts that share the same absolute output and model paths (264 mathematics updates for ID 20, 295 DeepCoder updates for ID 25). `--native-stage plan` is read-only and prints both host-local torchrun commands. On the first host only, `--native-stage prepare` writes the run's source copy, signed TRAIN/VAL inputs and source/protocol SHA receipts (ID 25 also takes `--judge-service-root` from a running `qwen35.judge_service` with the `ORIGINAL_IMAGE` judge). Then, on **both** hosts with `--node-rank 0` / `1`, the same routable node-0 `--master-addr`, the same shared root and the same attempt label, run `probe` (NCCL and shared-storage check), `smoke` and `train`, each with a new attempt label. Per-step bridge, FP32 AdamW and four-rank RNG are signed; `--resume-latest` with a new attempt label continues from the newest complete step, keeping `n`/`n+1` plus validation checkpoints. Install and activate the shared environment on both hosts at the same absolute path. The ranks run offline: the first `probe` on node 0 needs Hugging Face Hub access once to cache the complete pinned FP8 expert kernel in `<RUN_ROOT>/runtime_cache/fp8_kernel`, which later stages and node 1 reuse. Before its first update, ID 25 requires a signed two-host probe and smoke and validates all 201 × 16 held-out responses.
 
 ```sh
 # Replace these illustrative paths/host name with identical accessible paths on both hosts.
@@ -328,8 +326,6 @@ export SENDER=/shared/models/Qwen3.5-397B-A17B-FP8
 export RECEIVER=/shared/models/Qwen3.5-4B
 export RUN_ROOT=/shared/private/id20-fresh
 export MASTER_ADDR=node0.example.internal
-export VLLM_PYTHON=/shared/venvs/vllm/bin/python
-export SCORE_PYTHON=/shared/venvs/math-verify/bin/python
 platour-exps train --experiment 20 --sender "$SENDER" --receiver "$RECEIVER" \
   --train-backend native-multinode --native-stage plan --master-addr "$MASTER_ADDR" \
   --output "$RUN_ROOT"
@@ -340,13 +336,13 @@ platour-exps train --experiment 20 --sender "$SENDER" --receiver "$RECEIVER" \
 export NODE_RANK=0
 platour-exps train --experiment 20 --sender "$SENDER" --receiver "$RECEIVER" \
   --train-backend native-multinode --native-stage probe --node-rank "$NODE_RANK" \
-  --master-addr "$MASTER_ADDR" --native-attempt probe01 --vllm-python "$VLLM_PYTHON" \
-  --scoring-python "$SCORE_PYTHON" --output "$RUN_ROOT"
+  --master-addr "$MASTER_ADDR" --native-attempt probe01 \
+  --output "$RUN_ROOT"
 # After BOTH probe commands finish, run on both hosts for a NEW attempt:
 platour-exps train --experiment 20 --sender "$SENDER" --receiver "$RECEIVER" \
   --train-backend native-multinode --native-stage smoke --node-rank "$NODE_RANK" \
-  --master-addr "$MASTER_ADDR" --native-attempt smoke01 --vllm-python "$VLLM_PYTHON" \
-  --scoring-python "$SCORE_PYTHON" --output "$RUN_ROOT"
+  --master-addr "$MASTER_ADDR" --native-attempt smoke01 \
+  --output "$RUN_ROOT"
 # Only after both nodes' smoke evidence is signed, use --native-stage train
 # with --native-attempt train01 on both hosts; after a failure use
 # --native-stage train --resume-latest --native-attempt resume02 and the same root.
@@ -371,8 +367,12 @@ budget. The ordinary CLI, native launchers and API all select by highest validat
 PACT SC/TR and `Qwen35Session.fit` also default to one epoch and restore the
 highest-accuracy VAL checkpoint, choosing the earliest tie, before TEST.
 `max_steps` requires explicit API `smoke=True`; PACT rejects `--control-steps`.
-New backend/budget identities reject resuming old HF-rollout runs. Archived native source manifests remain unchanged; new native runs use the signed selection adapter described below. GPU regression
-of the new portable rollout path is pending.
+New backend/budget identities reject resuming old HF-rollout runs. Archived native
+source manifests remain unchanged; new native runs use the signed selection adapter
+below. Bounded 35B-A3B → 4B checks covered two GRPO updates, worker reuse,
+checkpoint replay and signed resume. Full-budget accuracy remains unverified;
+see the [validation coverage](../docs/ENVIRONMENT.md#validation-coverage).
+For the tested grouped topology use `--n-gpu 8 --gpus-per-replica 2`.
 
 ## Shared formal defaults
 

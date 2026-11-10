@@ -130,7 +130,8 @@ def fit(kind, objective, output, *, fail_step=None):
     if fail_step is not None:
         result.evaluate = failing
     with ExitStack() as stack:
-        stack.enter_context(patch('qwen3.vllm_decode.VLLMDecoder', rollout))
+        # This test isolates collectives and resume; worker lifecycle has separate tests.
+        stack.enter_context(patch('qwen3.vllm_decode.decoder_session', rollout))
         stack.enter_context(patch('qwen35.vllm_decode.training_decoder', rollout))
         stack.enter_context(patch('qwen3.runner.score', side_effect=lambda task, text, gold, **kw: int(text == gold)))
         stack.enter_context(patch('qwen3.scoring.score', side_effect=lambda task, text, gold, **kw: int(text == gold)))

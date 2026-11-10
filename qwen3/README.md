@@ -34,13 +34,13 @@ same rules.
 # MATH500: eight one-GPU replicas. Use --n-gpu 1 for one GPU.
 platour-exps evaluate --experiment 18 \
   --sender Qwen/Qwen3-8B --receiver Qwen/Qwen3-1.7B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python \
+  --n-gpu 8 \
   --output ./outputs/18-math500-8gpu
 
 # MATH500: four two-GPU replicas, with the FP8 sender split by layer.
 platour-exps evaluate --experiment 15 \
   --sender Qwen/Qwen3-235B-A22B-FP8 --receiver Qwen/Qwen3-1.7B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python \
+  --n-gpu 8 \
   --output ./outputs/15-math500-8gpu
 ```
 
@@ -67,13 +67,13 @@ platour-exps pact-check --experiment 16 --prepare-only
 
 # Full suite: both SC and TR train for three complete epochs.
 platour-exps pact-check --experiment 16 \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/16-pact-check
+  --output ./outputs/16-pact-check
 
 # Explicit evaluation-only modes, without SC/TR training.
 platour-exps pact-check --experiment 16 --controls IT \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/16-it
+  --output ./outputs/16-it
 platour-exps pact-check --experiment 16 --controls DT IT \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/16-dt-it
+  --output ./outputs/16-dt-it
 ```
 
 Experiments 07–12 use `last_aligned`; 16–18 use `uniform_endpoints`. The pinned
@@ -164,7 +164,9 @@ training defaults remain three epochs with validation-based selection.
 
 TR GRPO rollouts use vLLM with a fresh current-weight snapshot per update,
 eight responses per TRAIN question, and the worker's token log probabilities.
-There is no HF rollout fallback for TR. SC GRPO training rollouts also use vLLM;
+There is no HF rollout fallback for TR. SC GRPO shares one sleeping vLLM
+receiver worker across its training rollouts and validation, as described below;
+the receiver-only TR snapshot path is unchanged.
 GRPO validation and all TEST generation use vLLM. For GRPO SC/TR, validation runs at step zero and every half epoch; training always completes its three epochs. The highest validation
 accuracy selects the checkpoint (earliest step on ties); TEST is evaluated only
 after loading that checkpoint. GSM8K GRPO PLatour/SC/TR use 500-question VAL avg@4 and 1,319-question TEST avg@2.
@@ -197,6 +199,8 @@ provenance and duplicate-prompt behavior.
 | MATH500 | 06, 12 / 15, 18 | MATH training data; MATH-500 test | 500 × 4 sampled answers |
 
 The reported metric counts correct **individual responses** over the complete denominator, not pass@k. The sampled Qwen3 test protocol uses temperature `0.7`, `top_p=0.8`, `top_k=20`; task-specific caps are in `experiments.json`. SFT uses its signed train/held-out split; corrected GRPO releases store their TRAIN-derived validation split in the dataset (below). The signed prompt token IDs, rather than a re-rendered template, determine what the models see.
+
+Install and activate the [shared HF/vLLM environment](../README.md#getting-started) before running these commands. Training and generation default to the active Python.
 
 ## Evaluate the released weights
 
@@ -231,10 +235,22 @@ torchrun --nnodes=1 --nproc-per-node=8 -m platour_exps train --experiment 7 \
   --train-data "data/qwen3/$TAG7/train.jsonl" \
   --validation-data "data/qwen3/$TAG7/validation.jsonl" \
   --test-data "data/qwen3/$TAG7/test.jsonl" \
-  --vllm-python <vllm-env>/bin/python --output <new-training-dir>
+  --output <new-training-dir>
 ```
 
 Every new bridge projection starts at exact FP32 zero. SFT follows the reference training recipe: each 64-question batch is split over four strided shares, each share is sorted longest-first and cut into padded micro-batches, gradients are summed as one flattened vector and clipped to global norm 1, and TF32, reduced-precision bf16 matmul and fused attention kernels are off. These micro-batches are the same for any number of GPUs. With the historical micro-batch unchanged, four ranks (`torchrun --nproc-per-node=4`, or `--train-backend historical-sft` below) reproduce the reference SFT runs bit for bit; other GPU counts use the same micro-batches and arithmetic but sum gradients in a different floating-point order, so later steps may differ in their last bits. Held-out token NLL (HF forward pass, same padded micro-batches) is recorded before training (`initial_validation.json`) and at every epoch boundary. With `--test-data`, the signed test is generated once (native vLLM) at the **final training checkpoint**, regardless of VAL loss. `selection.json` and `test/summary.json` record the step and the selection policy.
+
+Portable GRPO defaults to `--rollout-worker-mode persistent`: one frozen receiver
+engine per rank is reused across rollouts, validation and final testing within
+the training invocation. Each phase refreshes the bridge hash and its exported
+prefix KV; vLLM prefix caching remains disabled. Between phases, level-1 sleep
+offloads receiver weights to CPU and discards GPU KV allocations without repeating
+engine initialization. The worker is closed on success or failure. Use
+`--rollout-worker-mode restart` for the previous lifecycle; the independent API
+uses `PLatourSession.fit(..., rollout_worker_mode="restart")`. New runs sign the
+mode and reject changes on resume; older runs can resume explicitly with
+`restart`. This optimization covers bridge/SC training, not receiver-only TR or
+historical native backends. Sleep requires CPU space for the frozen receiver.
 
 Portable SFT caps GSM8K micro-batches at 4 (8B recipe: previously 8), keeping effective batch 64 and three epochs. Other recipe micro-batches remain unchanged. An explicit `--micro-batch N` on portable SFT changes only the padded micro-batch size, preserving the effective batch, learning-rate schedule and training budget. For example, Chemistry-CoT ID 10 exceeded the available memory on one GPU with its default 8; using micro-batch 2 completed full training and TEST. This override is rejected for GRPO and historical backends. Use the same value when resuming. MATH SFT IDs 06/12 and MATH SC/TR already use micro-batch 1. Historical native recipes remain unchanged; changing micro-batch can change floating-point accumulation, so this override is not a bitwise historical reproduction. The portable SFT protocol now signs micro-batch size: old runs without this field, or runs with a different value, require a fresh training root; their completed checkpoints remain usable for standalone evaluation. Before final TEST, portable SFT clears gradients and moves Adam state to CPU; the signed terminal model/optimizer/RNG are restored after evaluation even on failure. The shared vLLM startup releases idle cache and records `memory_before_worker.json`. Long sequences and the required sender/receiver models can still exceed available GPU memory; these safeguards are not a GPU qualification.
 
@@ -297,8 +313,8 @@ under the new protocol. GPU regression of the new portable rollout path is pendi
 
 The 235B-FP8 sender is not replicated per GPU; its recipes use the native backends.
 
-- `--train-backend historical-sft`: four paired-GPU ranks on eight GPUs with truly padded SFT micro-batches. Launch with `torchrun --nnodes=1 --nproc-per-node=4 --master-addr=127.0.0.1 --master-port=<free-port> -m qwen3.cli train` plus the same signed SFT arguments. Bridge, FP32 AdamW, the linear scheduler and both GPU RNG states of each rank are signed at step zero, every 16 updates and at each epoch boundary; continue an interrupted run with the same `--output` and `--resume <output>/checkpoints/step-XXXX`. FP8 sender training requires vLLM 0.17.1 in the **same** training Python for its expert kernel; use Torch 2.10, Transformers 5.3.0 and vLLM 0.17.1.
-  With `--test-data`, historical SFT runs final TEST collectively using `--vllm-python`, after releasing gradients and optimizer GPU memory. `selection.json` and `test/summary.json` record the final checkpoint. The run is marked complete only after TEST succeeds. If decoding fails, resume with the same arguments and `--resume <output>/checkpoints/step-XXXX` pointing to the final training step; no optimizer updates are repeated. Partial decoder output is archived and completed TEST is reused. TEST data/settings cannot change during resume. Without `--test-data`, no TEST is run. Smoke TEST summaries are explicitly labelled. The collective timeout defaults to 24 hours (`PLATOUR_DIST_TIMEOUT_HOURS`).
+- `--train-backend historical-sft`: four paired-GPU ranks on eight GPUs with truly padded SFT micro-batches. Launch with `torchrun --nnodes=1 --nproc-per-node=4 --master-addr=127.0.0.1 --master-port=<free-port> -m qwen3.cli train` plus the same signed SFT arguments. Bridge, FP32 AdamW, the linear scheduler and both GPU RNG states of each rank are signed at step zero, every 16 updates and at each epoch boundary; continue an interrupted run with the same `--output` and `--resume <output>/checkpoints/step-XXXX`. FP8 sender training requires vLLM 0.17.1 in the **same** training Python for its expert kernel; the earlier stack used Torch 2.10, Transformers 5.3.0 and vLLM 0.17.1. The default shared stack now uses Transformers 5.17.0; FP8 native SFT still needs a GPU regression on it.
+  With `--test-data`, historical SFT runs final TEST collectively in the active environment (with an optional `--vllm-python` override), after releasing gradients and optimizer GPU memory. `selection.json` and `test/summary.json` record the final checkpoint. The run is marked complete only after TEST succeeds. If decoding fails, resume with the same arguments and `--resume <output>/checkpoints/step-XXXX` pointing to the final training step; no optimizer updates are repeated. Partial decoder output is archived and completed TEST is reused. TEST data/settings cannot change during resume. Without `--test-data`, no TEST is run. Smoke TEST summaries are explicitly labelled. The collective timeout defaults to 24 hours (`PLATOUR_DIST_TIMEOUT_HOURS`).
 - `--train-backend historical-grpo`: the bundled, SHA-checked native trainer with native vLLM rollouts/log-probabilities and the group reward. Supply the signed `--train-data`, `--validation-data` (for the corrected dataset) and `--test-data`; it consumes the published split and runs the single final test as above. Use eight GPUs, vLLM 0.17.1 in the training Python and an isolated `PLATOUR_SCORING_PYTHON` with MathVerify for GSM8K/MATH. Bridge, FP32 AdamW and per-rank CPU/CUDA RNG are signed at every validation boundary; resume with `--resume <output>/train/checkpoints/step-XXXX`.
 
 Both native backends accept `--smoke` (with a fresh output directory) for a bounded few-update check; resume a smoke with `--resume <output>/smoke/checkpoints/step-0001 --smoke`. For smoke runs on GPUs with less memory, `PLATOUR_SFT_FP8_SMOKE_MICRO_BATCH`, `PLATOUR_NATIVE_VLLM_FRACTION` and `PLATOUR_NATIVE_VLLM_GPU_PLACEMENT=secondary` reduce the per-GPU footprint while keeping the global batch; full-budget runs reject these overrides.

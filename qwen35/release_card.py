@@ -37,28 +37,18 @@ task files are available. See the [installation guide]({PROJECT_URL}#getting-sta
 ```bash
 git clone https://github.com/zhenyi4/platour.git
 cd platour
-python3.11 -m venv .venv
+python3.11 -m pip install --user uv
+python3.11 scripts/install_environment.py
 source .venv/bin/activate
-python -m pip install -e . "torch==2.10.0" "transformers==5.17.0" "fla-core==0.5.2" "kernels==0.16.0"
-
-# Install the generation backend in a separate environment.
-python3.11 -m venv .venv-vllm
-.venv-vllm/bin/python -m pip install "vllm==0.17.1"
-export PLATOUR_VLLM_PYTHON="$PWD/.venv-vllm/bin/python"
-"$PLATOUR_VLLM_PYTHON" scripts/check_vllm_runtime.py
 ```
 
-`--vllm-python` is the **full path to the Python executable inside the environment
-that contains vLLM 0.17.1**, not the environment directory or the `vllm` command.
-For an existing environment, activate it and run
-`python -c 'import sys; print(sys.executable)'`; assign that output to
-`PLATOUR_VLLM_PYTHON`, then reactivate the PLatour environment. Run the main command
-with the PLatour Python. The project starts its decoder with the specified vLLM
-Python. The two environments avoid the Transformers dependency conflict.
-
-The runtime check exercises a small GPU kernel; it does not load this checkpoint.
-For Qwen3.5 acceleration extras and FP8 sender requirements, follow the
-[environment guide]({PROJECT_URL}/blob/main/AGENT.md#setup).
+HF training, vLLM generation and scoring share this environment. The installer
+includes the pinned Qwen3.5 extras and checks dependencies and GPU kernels.
+No `PLATOUR_VLLM_PYTHON` setting or `vllm_python` argument is needed.
+`--vllm-python` remains an optional interpreter override for existing deployments.
+Use `python scripts/install_environment.py --check-only` to repeat verification.
+The checks exercise small kernels; they do not load this checkpoint or certify
+FP8 senders. See the [environment guide]({PROJECT_URL}/blob/main/AGENT.md#setup).
 '''
 
 
@@ -68,7 +58,7 @@ def project_generation(record):
     self_communication = identifier in (21, 27)
     method = ('virtual_sender' if virtual else 'self_communication' if self_communication
               else record['method'])
-    lines = ['import os', 'from platour_exps import ensure_weight, resolve_model_input',
+    lines = ['from platour_exps import ensure_weight, resolve_model_input',
              'from platour_api import load_session', '',
              '# Download/cache backbones; verify the released checkpoint against the manifest.',
              f'receiver = resolve_model_input("{record["receiver"]}")']
@@ -105,7 +95,6 @@ def project_generation(record):
               ('    prompt_ids=prompt_ids,' if virtual else
                f'    messages=[{{"role": "user", "content": "{question}"}}],'),
               '    backend="vllm", max_new_tokens=256,',
-              '    vllm_python=os.environ["PLATOUR_VLLM_PYTHON"],',
               f'    output="./outputs/{identifier:02d}-custom-prompt",',
               ')', 'print(answer["response"])']
     description = ('''This checkpoint contains bridge projections and learned virtual template features.
@@ -134,9 +123,6 @@ Load the separately sourced frozen sender and receiver with the project API;
 def standard_generation(record):
     lora = record['method'] == 'lora'
     repo = 'zen-E/' + record['slug']
-    install = 'python -m pip install "torch==2.15.0" "transformers==5.22.1" accelerate'
-    if lora:
-        install += ' "peft==0.21.2"'
     lines = ['import torch']
     if lora:
         lines += ['from peft import PeftModel',
@@ -174,10 +160,9 @@ def standard_generation(record):
             'There is no vision encoder. The exported input embeddings and output head\n'
             'remain independent, preserving the original BF16 tensors.\n')
     return ('## Generate an answer with Transformers\n\n' + note + '\n'
-            'Use a separate Python environment for this standard loading route. The versions\n'
-            'below match the recorded export/loading checks; the project CLI environment is\n'
-            'documented separately below. This route does not require vLLM.\n\n'
-            '```bash\n' + install + '\n```\n\n```python\n' + '\n'.join(lines) + '\n```\n\n'
+            'Activate the shared project environment from the setup section below.\n'
+            'It includes Transformers and PEFT for this standard loading route.\n\n'
+            '```python\n' + '\n'.join(lines) + '\n```\n\n'
             'This short custom-prompt example does not reproduce the benchmark protocol.\n'
             'Increase `max_new_tokens` for longer answers. Generating code requires no coding\n'
             'judge; running benchmark tests does.\n')
@@ -190,8 +175,7 @@ def benchmark_sections(record):
     command = [f'platour-exps evaluate --experiment {identifier}', f'  --weights {repo}']
     if record['sender']:
         command.append(f'  --sender {record["sender"]}')
-    command += [f'  --receiver {record["receiver"]}',
-                '  --vllm-python "$PLATOUR_VLLM_PYTHON"']
+    command += [f'  --receiver {record["receiver"]}']
     if record['task'] == 'deepcoder':
         command += ['  --code-cases "$JUDGE_ROOT/cases"',
                     '  --official-checker "$LCB_CHECKER"',

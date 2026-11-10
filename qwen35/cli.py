@@ -429,6 +429,22 @@ def verify_code_evaluation_environment(case, args):
 
 
 def run_train(case, args):
+    from .vllm_decode import training_decoder_scope
+    eligible = getattr(case, 'method', None) in ('bridge', 'random')
+    mode = getattr(args, 'rollout_worker_mode', None) or ('persistent' if eligible else 'restart')
+    if mode not in ('persistent', 'restart') or (mode == 'persistent' and not eligible):
+        raise ValueError('Persistent rollout workers require a frozen receiver')
+    # Pool creation is lazy: preflight/data checks still precede model loading.
+    # RANK is provided by the launcher before distributed.init runs below.
+    output = Path(args.output) / 'rollout-worker'
+    if int(os.environ.get('WORLD_SIZE', '1')) > 1:
+        output /= f"rank-{int(os.environ['RANK']):02d}"
+    scope = training_decoder_scope(output, max_model_len=0, mode=mode) if eligible else nullcontext()
+    with scope:
+        return _run_train(case, args, rollout_worker_mode=mode)
+
+
+def _run_train(case, args, *, rollout_worker_mode):
     """Portable GRPO recipe.
 
     Budgets default to the published recipe values (64 questions x 8 responses per update,
@@ -456,6 +472,9 @@ def run_train(case, args):
         args.device = distributed.device(local)
     output = Path(args.output)
     data = inputs(case, args.data_root)
+    from .vllm_decode import reserve_training_context
+    reserve_training_context(max(3072, cap + max((len(row['prompt_token_ids'])
+        for row in data['train'] + data['validation']), default=0)))
     from training_protocol import budget
     _, formal_steps = budget(len(data['train']), batch_size, 1, 1)
     if not smoke and formal_steps != case.steps:
@@ -465,6 +484,11 @@ def run_train(case, args):
         smoke_only=smoke, response_cap=cap, validation_samples=2 if smoke else case.val_samples,
         train_sampling=dict(temperature=1., top_p=1., top_k=-1, presence_penalty=0.))
     protocol_path = output / 'training_protocol.json'
+    if case.method in ('bridge', 'random'):
+        legacy_restart = (rollout_worker_mode == 'restart' and protocol_path.is_file()
+                          and 'rollout_worker_mode' not in read(protocol_path))
+        if not legacy_restart:
+            protocol['rollout_worker_mode'] = rollout_worker_mode
     from qwen3.parallel import sign_topology
     sign_topology(protocol)
     def prepare_protocol():
@@ -539,7 +563,7 @@ def run_train(case, args):
             if getattr(args, 'backend', 'vllm') == 'vllm':
                 from tempfile import TemporaryDirectory
                 from safetensors.torch import save_file
-                from .vllm_decode import VLLMDecoder
+                from .vllm_decode import decoder_session
                 if smoke:
                     evidence = evaluation / f'validation-{step:04d}-attempt-{time.time_ns()}'
                     evidence.mkdir()
@@ -552,7 +576,7 @@ def run_train(case, args):
                     weight = temporary / (case.tag + '.safetensors')
                     save_file({name: tensor.detach().cpu().contiguous()
                                for name, tensor in actor.inference_state().items()}, weight)
-                    with VLLMDecoder(case, args.receiver, weight, temporary,
+                    with decoder_session(case, args.receiver, weight, temporary,
                             actor=actor if case.method in ('bridge', 'random') else None,
                             device=next(iter(actor.trainable())).device,
                             worker_python=args.vllm_python,
@@ -773,10 +797,10 @@ def run_eval(case, args, *, actor=None, tokenizer=None, _local=False):
         raise RuntimeError('Frozen AIME Clean80 question mask differs')
     results = {}
     if backend == 'vllm':
-        from .vllm_decode import VLLMDecoder
+        from .vllm_decode import decoder_session
         import torch
         from qwen3.parallel import local_device
-        decoder_context = VLLMDecoder(case, args.receiver, args.weights, output, actor=actor,
+        decoder_context = decoder_session(case, args.receiver, args.weights, output, actor=actor,
             device=torch.device(local_device(getattr(args, 'device', 'cuda:0'))),
             worker_python=getattr(args, 'vllm_python', None),
             memory_fraction=(args.vllm_memory_fraction if args.vllm_memory_fraction is not None
@@ -887,7 +911,7 @@ def main():
             cmd.add_argument('--backend', choices=('vllm',), default='vllm',
                              help='Native vLLM 0.17.1 is the default for validation and tests')
             cmd.add_argument('--vllm-python', type=Path,
-                             help='Separate Python with native vLLM 0.17.1 installed')
+                             help='Optional vLLM interpreter override; defaults to current project Python')
             cmd.add_argument('--vllm-memory-fraction', type=float,
                              help='Override task-specific native vLLM memory fraction')
             cmd.add_argument('--smoke', action='store_true',
@@ -901,6 +925,8 @@ def main():
                              choices=('portable', 'historical-native', 'native-multinode'),
                              default='portable',
                              help='19/21–24: one-host native trainer; 20/25: two-host TP4 via native-multinode')
+            cmd.add_argument('--rollout-worker-mode', choices=('persistent', 'restart'),
+                             help='Portable frozen-receiver GRPO: reuse workers by default; restart for legacy behavior')
             cmd.add_argument('--resume-step', type=int,
                              help='Same-run signed native validation or rolling optimizer step')
             cmd.add_argument('--resume-latest', action='store_true',
@@ -914,7 +940,7 @@ def main():
             cmd.add_argument('--judge-service-root', type=Path,
                              help='ID25 only: running pinned CPU Docker judge on shared storage')
             cmd.add_argument('--scoring-python', type=Path,
-                             help='Isolated math-verify Python for native GRPO reward and validation')
+                             help='Optional math-verify interpreter override; defaults to current project Python')
             cmd.add_argument('--statistics-root', type=Path,
                              help='ID22: original 500-TRAIN-only scalar moments/template root; no inference checkpoint')
             cmd.add_argument('--template-init', type=Path,
@@ -948,6 +974,11 @@ def main():
     case = select(args.experiment)
     historical = args.action == 'train' and args.train_backend == 'historical-native'
     multinode = args.action == 'train' and args.train_backend == 'native-multinode'
+    if historical or multinode:
+        args.vllm_python = args.vllm_python or Path(sys.executable)
+        args.scoring_python = args.scoring_python or Path(sys.executable)
+    if (historical or multinode) and args.rollout_worker_mode is not None:
+        parser.error('--rollout-worker-mode applies only to portable training')
     if int(os.environ.get('WORLD_SIZE', '1')) > 1 and (
             args.action != 'train' or historical or multinode):
         raise RuntimeError('Only portable training may run under torchrun; native backends '
@@ -973,8 +1004,8 @@ def main():
             print(json.dumps({'experiment': case.identifier, 'requires_two_hosts': True,
                               'gpu_started': False, 'internal_torchrun_commands': plans}, indent=2))
             return
-        if args.node_rank is None or args.vllm_python is None or args.scoring_python is None:
-            parser.error('Native two-host run needs node rank and installed generation/scoring Python')
+        if args.node_rank is None:
+            parser.error('Native two-host run needs --node-rank')
         from platour_exps import require_vllm_python
         require_vllm_python(args.vllm_python)
         if args.resume_latest:
@@ -990,8 +1021,6 @@ def main():
     if historical:
         if case.identifier not in (19, 21, 22, 23, 24) or args.backend != 'vllm' or args.template_init is not None:
             raise ValueError('Frozen native Qwen3.5 currently supports 19 and 21–24; other IDs are not bundled')
-        if args.vllm_python is None or args.scoring_python is None:
-            parser.error('Native Qwen3.5 requires --vllm-python and --scoring-python')
         if case.identifier in (19, 21) and (args.sender is None or args.statistics_root is not None):
             parser.error('Native ID19/21 needs its original --sender and no external Gaussian statistics')
         if case.identifier == 22 and (args.sender is not None or

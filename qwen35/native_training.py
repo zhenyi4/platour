@@ -309,7 +309,9 @@ def worker(root, *, resume_step=None):
     trainer.main()
 
 
-def execute(root, *, generation_python, scoring_python, resume_step=None):
+def execute(root, *, generation_python=None, scoring_python=None, resume_step=None):
+    generation_python = Path(generation_python or sys.executable)
+    scoring_python = Path(scoring_python or sys.executable)
     root = Path(root).absolute()
     protocol = verify_prepared(root)
     if resume_step is not None:
@@ -405,14 +407,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=('worker', 'execute'))
     parser.add_argument('--root', type=Path, required=True)
-    parser.add_argument('--vllm-python', type=Path)
-    parser.add_argument('--scoring-python', type=Path)
+    parser.add_argument('--vllm-python', type=Path, default=Path(sys.executable),
+                        help='Optional generation interpreter override; defaults to current Python')
+    parser.add_argument('--scoring-python', type=Path, default=Path(sys.executable),
+                        help='Optional math-verify interpreter override; defaults to current Python')
     parser.add_argument('--resume-step', type=int)
     args = parser.parse_args()
     if args.action == 'worker':
         worker(args.root, resume_step=args.resume_step)
-    elif args.vllm_python is None or args.scoring_python is None:
-        parser.error('execute requires --vllm-python and --scoring-python')
     else:
         execute(args.root, generation_python=args.vllm_python,
                 scoring_python=args.scoring_python, resume_step=args.resume_step)

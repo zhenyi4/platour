@@ -106,7 +106,8 @@ def main(argv=None):
     for role in ('sender', 'receiver', 'bridge'):
         p.add_argument('--'+role, type=Path, help='Optional matching local released model/checkpoint')
     p.add_argument('--backend', choices=('vllm',), default='vllm')
-    p.add_argument('--vllm-python', type=Path)
+    p.add_argument('--vllm-python', type=Path,
+                             help='Optional vLLM interpreter override; defaults to current project Python')
     p.add_argument('--cache-dir', type=Path)
     p.add_argument('--local-files-only', action='store_true')
     p.add_argument('--prepare-only', action='store_true', help='Verify all full-suite inputs without loading models')

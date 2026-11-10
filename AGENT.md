@@ -7,6 +7,7 @@ This is the complete usage guide, written for coding agents. [`README.md`](READM
 - This is the public code/data interface for 30 *different* experiments, not a claim that every historical GPU trajectory has been reproduced.
 - Do not treat two-step/three-step smokes as full-budget runs or as a completed PACT-Check. CPU mocks do not establish GPU training, Docker readiness or published test accuracy.
 - Use a new private output directory for each run and leave unsuccessful runs unchanged. Do not commit model weights, private outputs, machine paths, credentials or other users' processes.
+- Keep GPU model names, device-memory specifications, hostnames and run timings in private output records; do not publish them in documentation or model cards.
 - Report numerical equality only after comparing actual tensors/gradients with an uninterrupted control in the same environment.
 
 ## Where things are
@@ -20,13 +21,17 @@ This is the complete usage guide, written for coding agents. [`README.md`](READM
 ## Setup
 
 ```sh
-pip install -e . "torch==2.10.0" "transformers==5.17.0" "fla-core==0.5.2" "kernels==0.16.0"
+python3.11 -m pip install --user uv
+python3.11 scripts/install_environment.py
+source .venv/bin/activate
+python scripts/install_environment.py --check-only
 ```
 
-- Run from this checkout: the signed inputs (`data/`) and the weight manifest (`models/manifest.json`) are read from the repository, so keep the editable install rather than a standalone wheel.
-- The command above installs the tested HF environment: Python 3.11 with Torch 2.10.0, Transformers 5.17.0, fla-core 0.5.2, TileLang 0.1.15 and kernels 0.16.0; plain `pip install -e .` may resolve newer, untested fla-core/kernels releases. On Hopper GPUs, fla's gated-delta backward needs TileLang (installed by default) or Triton ≥ 3.7.1. For Qwen3.5 GPU training, run `python scripts/install_qwen35_extras.py` after the base install. It adds the packages in `requirements/qwen35-extras.txt` and a SHA-verified upstream `causal-conv1d==1.6.2.post1` wheel matched to Linux x86_64/Python 3.11/Torch 2.10/CUDA 12/CXX11 ABI. It preserves core package versions, refreshes editable imports, and checks the convolution's CUDA forward/backward. Without causal-conv1d, Transformers falls back to a correct but much slower PyTorch convolution. Other ABI combinations need their own matching wheel or source build; do not silently replace Torch or the system CUDA Toolkit. The installer leaves the separate vLLM environment unchanged. The native two-host backend additionally needs the `native-train` extra (`pip install -e ".[native-train]"` with the same pins).
-- GRPO training rollouts and validation/test answer generation require native **vLLM 0.17.1** for both families, including portable training and PACT SC/TR. Keep vLLM in a separate generation Python and pass `--vllm-python <vllm-env>/bin/python`. HF answer-generation options are rejected; SFT held-out NLL remains an HF forward pass. vLLM's package metadata declares `transformers<5`, which conflicts with the Qwen3.5 HF runtime.
-- The native Qwen3 GRPO trainer and the 235B-FP8 SFT expert kernel need vLLM 0.17.1 **in the HF training Python**; prepare that combination deliberately rather than relying on pip's dependency resolution. The native FP8 SFT backend uses Torch 2.10, Transformers 5.3.0 and vLLM 0.17.1.
+- Run from this editable checkout so the signed data and weight manifests remain available.
+- The default is one Python 3.11 environment for HF training, vLLM generation and MathVerify scoring. The installer pins Torch 2.10.0, Transformers 5.17.0 and vLLM 0.17.1, includes Qwen3.5 extras/native-training dependencies and the matching SHA-verified causal-conv1d wheel, and checks real CUDA kernels. Existing environments are preserved; use a fresh `--venv` directory. `--imports-only` does not certify GPU execution. See the [runtime guide](docs/ENVIRONMENT.md) for the exact dependency override and compiler requirements.
+- All public portable/native entry points default to the current Python. `--vllm-python` and `--scoring-python` remain optional compatibility overrides; API callers can omit `vllm_python`. A separate worker process does not require a separate environment. HF answer generation remains rejected; SFT held-out NLL is an HF forward pass.
+- vLLM's upstream Transformers bound conflicts with the shared stack. Ordinary pip resolution/checking cannot certify it: use the unified installer and its `--check-only` / `--audit-only` checks. Only the exact tested metadata conflict is permitted; other missing or incompatible dependencies fail.
+- Validation includes full eight-GPU portable SFT/TEST for Qwen3-8B→1.7B ARC-C and GSM8K (IDs 07/11) and short Qwen3/Qwen3.5 persistent-worker GRPO runs. It does not certify full native training, FP8 senders or full GRPO budgets. The earlier native FP8 SFT stack used Transformers 5.3.0; it still needs a GPU regression with the new default 5.17.0.
 - FP8 senders (Qwen3-235B, Qwen3.5-397B) load a pinned expert kernel from the Hugging Face Hub each time they start, so run them with Hub access (`HF_HUB_OFFLINE` unset) and with `DO_NOT_TRACK` / `HF_HUB_DISABLE_TELEMETRY` unset—kernels 0.16 otherwise sends an invalid request header. The two-host native backend instead caches the complete pinned kernel once in its run root (see [`qwen35/README.md`](qwen35/README.md#native-backends)).
 - `platour-exps download-data --experiment 1` restores all signed inputs for one experiment; `--all` restores all 68 payloads. Training/evaluation hydrate missing inputs automatically, using pinned HF revisions and SHA-256. Local modified inputs fail verification. See [`data/README.md`](data/README.md) for custom roots and offline caches. Qwen3 data paths default to the selected experiment; SFT final testing remains optional through `--test-data`.
 - `platour-exps download --experiment 1` retrieves and verifies a released weight; evaluation does this automatically if it is not already present.
@@ -87,17 +92,17 @@ batch, learning rate and sampling seeds stay fixed:
 # One machine, eight GPUs
 torchrun --nnodes=1 --nproc-per-node=8 -m platour_exps train --experiment 19 \
   --sender <public-35b-sender> --receiver <public-4b-receiver> \
-  --vllm-python <vllm-env>/bin/python --output <new-training-dir>
+  --output <new-training-dir>
 
 # N machines x eight GPUs: run on every node with its own --node-rank (0..N-1)
 torchrun --nnodes=<N> --node-rank=<i> --nproc-per-node=8 \
   --master-addr=<node-0-address> --master-port=29500 \
   -m platour_exps train --experiment 19 \
   --sender <public-35b-sender> --receiver <public-4b-receiver> \
-  --vllm-python <vllm-env>/bin/python --output <shared-training-dir>
+  --output <shared-training-dir>
 ```
 
-- The output root must be on storage shared by all nodes. Rank 0 writes signed checkpoints containing every rank's RNG. All ranks now generate their validation/TEST shards with vLLM and aggregate counts, preserving question IDs and sampling seeds. PACT DT calibration, DT/IT inference, and SC/TR training/validation/test are collective too. Shared metadata has one writer. New multi-rank protocols sign replica count and group size; changing topology or resuming an older unsigned-topology run requires a fresh root. Portable GRPO still recreates vLLM per update; active-request limits are unchanged.
+- The output root must be on storage shared by all nodes. Rank 0 writes signed checkpoints containing every rank's RNG. All ranks now generate their validation/TEST shards with vLLM and aggregate counts, preserving question IDs and sampling seeds. PACT DT calibration, DT/IT inference, and SC/TR training/validation/test are collective too. Shared metadata has one writer. New multi-rank protocols sign replica count and group size; changing topology or resuming an older unsigned-topology run requires a fresh root. Qwen3 portable bridge/SC GRPO reuses one receiver worker per rank within a training invocation, refreshing bridge/prefix identities and sleeping between phases to release GPU weights/KV memory. `--rollout-worker-mode restart` (API `rollout_worker_mode='restart'`) retains the old lifecycle and supports older signed runs without the mode field; new runs sign it. Qwen3.5 portable bridge/SC/Virtual Sender GRPO also reuses sleeping workers, one per rank/runtime budget (CLI rollout and validation retain different budgets); KV and GDN memory are checked against each active checkpoint. Qwen3 TR and Qwen3.5 full/LoRA training still recreate workers. Active-request limits and native backends are unchanged.
 - **API validation cadence.** `validation_schedule="auto"` defaults to epoch-end SFT validation, half-epoch Qwen3 GRPO validation, and recipe-based Qwen3.5 GRPO validation. DAPO uses every 33 optimizer updates; DeepCoder uses every 42, with final-step validation and the published 294/295 exception (only IDs 26/28 include 294 at the 295-step budget). Custom budgets retain the task interval and always include the final step. All include initial validation at step zero. PACT SC/TR use these defaults. Explicit `validation_schedule="step"` is available for debugging; Qwen3 initial-only GRPO smoke remains supported. Explicit `validation_schedule="final"` is available only for GRPO smoke runs in both families: it validates the terminal step once, with no step-zero or intermediate measurement, and selects that sole candidate. Schedules are part of the signed protocol and cannot change during resume.
 - **Historical SFT final TEST.** `--test-data` is optional; when supplied, validate the generation runtime before loading models and run collective vLLM TEST at the final signed checkpoint. TEST data/settings are bound to `protocol.json`. A TEST failure leaves the run incomplete; resume from the final signed training step with identical arguments to retry without additional optimizer updates. Completed TEST summaries are reused. Historical SFT still requires four ranks/eight GPUs; CPU contract tests do not qualify that GPU topology.
 - **SFT optimizer defaults.** Qwen3 and Qwen3.5 bridge/SC/Virtual Sender/LoRA SFT use peak LR `1e-4`; full-parameter SFT uses `1e-5`. AdamW uses betas `(0.9, 0.999)` and zero weight decay. All SFT paths use linear warmup then linear decay to zero; the first update uses LR zero. APIs default to `ceil(0.1 * total_steps)` warmup steps and accept explicit `learning_rate` / `warmup_steps` overrides. Qwen3 formal recipes keep their pinned warmup counts, which PACT SC/TR reuse for matching task budgets. The schedule is signed in new SFT protocols; old constant-LR runs cannot resume under the new schedule (use a fresh output root). GRPO uses constant LR `1e-6` for full-parameter training and `1e-5` for other methods, without warmup.
@@ -125,8 +130,7 @@ system = PLatourSession.load("<Qwen3-8B>", "<Qwen3-1.7B>",
                             bridge="<compatible-projection.safetensors>",
                             mapping="last_aligned")  # automatic placement on visible GPUs
 answer = system.generate(messages=[{"role": "user", "content": "Compute 2+2."}],
-                         backend="vllm", output="<new-private-output>", max_new_tokens=32,
-                         vllm_python="<vllm-env>/bin/python")
+                         backend="vllm", output="<new-private-output>", max_new_tokens=32)
 # Token IDs can also be supplied with generate(prompt_ids=[...], backend="vllm", ...).
 train = load_dataset("<independent-train.jsonl>")
 validation = load_dataset("<independent-validation.jsonl>")
@@ -160,10 +164,10 @@ donors; DT calibrates on distinct TRAIN prompts. See [the Qwen3 guide](qwen3/REA
 platour-exps pact-check --experiment 16 --prepare-only
 # SC and TR each train for three complete epochs.
 platour-exps pact-check --experiment 16 \
-  --vllm-python <vllm-env>/bin/python --output <new-private-pact-run>
+  --output <new-private-pact-run>
 # IT-only regression remains explicit:
 platour-exps pact-check --experiment 16 --controls IT \
-  --vllm-python <vllm-env>/bin/python --output <new-private-it-run>
+  --output <new-private-it-run>
 
 # Custom Qwen3 inputs explicitly opt out of the pinned default:
 platour-exps pact-check --it-source custom --sender <public-sender> --bridge <trained-bridge.safetensors> \
@@ -178,7 +182,7 @@ platour-exps pact-check --family qwen35 --sender <public-35b-sender> \
   --dataset <split-directory> --task dapo \
   --prefix-ids '[...]' --suffix-ids '[...]' \
   --semantic-group-field semantic_group --tr-method lora \
-  --vllm-python <vllm-env>/bin/python --output <new-private-pact-run>
+  --output <new-private-pact-run>
 ```
 
 - **Custom/Qwen3.5 dataset.** A directory with disjoint `train.jsonl`, `validation.jsonl` and `test.jsonl` (fully rendered `prompt_token_ids`, TRAIN/VAL/TEST `gold`; TRAIN/VAL `response_token_ids` additionally required for `--control-objective sft`). TRAIN and TEST must carry an audited `semantic_group`: differing group labels must exclude duplicates and paraphrases. Audit these groups independently; do not guess them from token inequality.
@@ -200,6 +204,8 @@ platour-exps pact-check --family qwen35 --sender <public-35b-sender> \
 
 ## Verification status
 
+The checks below span earlier runtimes. See the [runtime validation](docs/ENVIRONMENT.md#validation-coverage) for unified-environment evidence and the remaining FP8/native coverage gaps.
+
 - Portable training and evaluation have been exercised with one GPU, two and four ranks on one host, and two hosts × eight GPUs (16 ranks over a shared output root), including whole-job kill/resume and the rejection of a resume with a different rank count.
 - Qwen3 SFT ran its full 54-update ARC-C recipe (four ranks reproduce the reference training run bit for bit). Qwen3 GRPO and Qwen3.5 training were exercised with short budgets (a few updates, sampled validation/test). Full-budget portable GRPO/Qwen3.5 runs have not been verified, so do not report them as such.
 - On two eight-GPU hosts, ID 20 has passed the two-host probe, the four-rank 16K smoke, formal step-0 validation (500 × 4) and five signed updates with whole-job kills, `--resume-latest` and rolling checkpoint retention. The full 264-update run and any two-host ID 25 run have not been executed, so do not report them.
@@ -211,7 +217,7 @@ platour-exps pact-check --family qwen35 --sender <public-35b-sender> \
 2. Before launching, verify the data/weight manifests, model IDs, split roles, Docker judge provenance (for coding), device topology and free memory.
 3. Use a new private output directory per run. An interrupted validation is retried from its signed step without repeating a signed update.
 4. Inspect `metrics.jsonl`, complete checkpoint markers, the validation denominator and summary, rank failures and independent TEST coverage.
-5. After code edits, run `python -m unittest discover -s tests -p 'test_*.py' -q` and `git diff --check`.
+5. For development tests, install `pytest==9.2.0` in the active shared environment (`python -m pip install pytest==9.2.0`). After code edits, run `python -m unittest discover -s tests -p 'test_*.py' -q`, `python -m pytest -q tests/test_vllm_persistence.py tests/test_qwen35_persistence.py`, and `git diff --check`.
 
 ## License
 

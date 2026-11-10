@@ -1,0 +1,3 @@
+# vLLM 0.17.1 declares transformers<5. This explicit override preserves the
+# tested HF training version; it does not rewrite the installed package metadata.
+transformers==5.17.0

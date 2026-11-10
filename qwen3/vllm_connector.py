@@ -41,9 +41,17 @@ class PLatourPrefixConnector(KVConnectorBase_V1, SupportsHMA):
             raise ValueError('Disable vLLM prefix caching for Qwen3 bridge memory')
         self.directory = Path(self._kv_transfer_config.get_from_extra_config('storage_path', None))
         self.checkpoint = self._kv_transfer_config.get_from_extra_config('checkpoint_sha256', None)
+        self.checkpoint_state = self._kv_transfer_config.get_from_extra_config('checkpoint_state_path', None)
         self.groups = kv_cache_config.kv_cache_groups if kv_cache_config else []
         self.pending = {}
         self.caches = {}
+
+    def current_checkpoint(self):
+        # The synchronous worker changes this only with no requests in flight.
+        # Both scheduler and GPU connector read the same atomically replaced file.
+        if self.checkpoint_state is None:
+            return self.checkpoint
+        return json.loads(Path(self.checkpoint_state).read_text())['checkpoint_sha256']
 
     def register_kv_caches(self, kv_caches):
         self.caches = kv_caches
@@ -56,9 +64,10 @@ class PLatourPrefixConnector(KVConnectorBase_V1, SupportsHMA):
         n = int(params['prefix_tokens'])
         if not 0 < n == len(ids) - 1 or num_computed_tokens != 0:
             raise ValueError('Import prompt[:-1] exactly; final prompt token remains native')
-        if params.get('checkpoint_sha256') != self.checkpoint:
+        checkpoint = self.current_checkpoint()
+        if params.get('checkpoint_sha256') != checkpoint:
             raise ValueError('Checkpoint identity differs from the loaded Qwen3 bridge')
-        key = memory_key(ids[:n], self.checkpoint)
+        key = memory_key(ids[:n], checkpoint)
         if key != params['memory_key'] or not (self.directory / (key + '.safetensors')).is_file():
             raise FileNotFoundError('Missing or mismatched Qwen3 bridge prefix')
         return n, False
@@ -88,7 +97,7 @@ class PLatourPrefixConnector(KVConnectorBase_V1, SupportsHMA):
             with safetensors.safe_open(self.directory / (request.key + '.safetensors'),
                                        framework='pt', device='cpu') as handle:
                 info = handle.metadata() or {}
-                expected = dict(format=FORMAT, checkpoint_sha256=self.checkpoint,
+                expected = dict(format=FORMAT, checkpoint_sha256=self.current_checkpoint(),
                                 prefix_tokens=str(request.tokens), memory_key=request.key)
                 if any(info.get(k) != value for k, value in expected.items()):
                     raise ValueError('Qwen3 prefix provenance mismatch')

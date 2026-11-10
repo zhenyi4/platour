@@ -1,0 +1,22 @@
+# Tested combined HF/vLLM core stack: Linux x86_64, Python 3.11, CUDA 12.
+# Default project runtime; installed by scripts/install_environment.py with
+# the explicit Transformers override in unified-overrides.txt.
+-r qwen35-extras.txt
+torch==2.10.0
+transformers==5.17.0
+tokenizers==0.23.3
+huggingface-hub==1.33.0
+vllm==0.17.1
+accelerate==1.15.0
+safetensors==0.8.0
+pyarrow==26.0.1
+math-verify==0.9.0
+fla-core==0.5.2
+tilelang==0.1.15
+kernels==0.16.0
+numpy==2.2.6
+flashinfer-python==0.6.4
+apache-tvm-ffi==0.1.12
+nvidia-cutlass-dsl==4.8.1
+# Same upstream, SHA-verified ABI-matched wheel as install_qwen35_extras.py.
+causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.2.post1/causal_conv1d-1.6.2.post1%2Bcu12torch2.10cxx11abiTRUE-cp311-cp311-linux_x86_64.whl#sha256=6ef3667660ef4404f9f833bb6988ab46e5024aec29af0f0575c195e307acf4ed

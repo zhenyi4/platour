@@ -1,5 +1,8 @@
 """Qwen3.5 HF hybrid prefill / native-vLLM-0.17.1 evaluation adapter."""
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 import hashlib
 import importlib.util
 import json
@@ -88,35 +91,48 @@ def export_lora(checkpoint: Path, destination: Path, receiver: Path):
                  'use_rslora': False, 'use_dora': False})
 
 
+def weight_identity(case, weight, weight_source):
+    weight = Path(weight)
+    identity = None
+    if weight_source not in ('release', 'checkpoint', 'inference'):
+        raise ValueError('Unknown Qwen3.5 weight source')
+    if weight_source == 'checkpoint':
+        from .checkpoints import read, sha256
+        marker = weight.parent / 'complete.json'
+        record = read(marker) if marker.is_file() else {}
+        identity = sha256(weight)
+        if (weight.is_symlink() or not record.get('complete') or
+                weight.parent.name != f"step-{record.get('step', -1):04d}" or
+                record.get('sha256', {}).get(weight.name) != identity):
+            raise ValueError('Training checkpoint is incomplete or its weight SHA differs')
+    elif weight_source == 'release' and weight.name in ('model.safetensors', 'adapter_model.safetensors'):
+        from .model import verify_standard_weight
+        verify_standard_weight(case, weight)
+    from .checkpoints import sha256
+    return identity or sha256(weight)
+
+
 class VLLMDecoder:
     def __init__(self, case, receiver: Path, weight: Path, output: Path, *, actor=None,
                  memory_fraction=.22, max_model_len=36864, max_num_seqs=16,
-                 worker_python: Path | None = None, device=None, weight_source='release'):
+                 worker_python: Path | None = None, device=None, weight_source='release',
+                 persistent=False):
         if worker_python is None and importlib.util.find_spec('vllm') is None:
             raise RuntimeError('vLLM 0.17.1 is required for Qwen3.5 evaluation; '
-                               'install the vllm extra or pass --vllm-python')
+                               'install with python scripts/install_environment.py')
         if case.method in ('bridge', 'random') and actor is None:
             raise ValueError('Qwen3.5 bridge needs the frozen HF prefill actor')
         if not 0 < memory_fraction < 1 or max_num_seqs < 1:
             raise ValueError('Invalid vLLM memory/sequence budgets')
+        if persistent and case.method not in ('bridge', 'random'):
+            raise ValueError('Persistent decoding requires a frozen receiver')
+        self.persistent = bool(persistent)
+        self.sleeping = False
+        self.control_counter = 0
         self.case = case
         self.actor = actor
         self.weight = Path(weight)
-        identity = None
-        if weight_source not in ('release', 'checkpoint', 'inference'):
-            raise ValueError('Unknown Qwen3.5 weight source')
-        if weight_source == 'checkpoint':
-            from .checkpoints import read, sha256
-            marker = self.weight.parent / 'complete.json'
-            record = read(marker) if marker.is_file() else {}
-            identity = sha256(self.weight)
-            if (self.weight.is_symlink() or not record.get('complete') or
-                    self.weight.parent.name != f"step-{record.get('step', -1):04d}" or
-                    record.get('sha256', {}).get(self.weight.name) != identity):
-                raise ValueError('Training checkpoint is incomplete or its weight SHA differs')
-        elif weight_source == 'release' and self.weight.name in ('model.safetensors', 'adapter_model.safetensors'):
-            from .model import verify_standard_weight
-            verify_standard_weight(case, self.weight)
+        identity = weight_identity(case, self.weight, weight_source)
         self.directory = Path(output) / ('vllm-' + uuid.uuid4().hex[:12])
         self.memory = self.directory / 'memory'
         self.memory.mkdir(parents=True)
@@ -128,13 +144,15 @@ class VLLMDecoder:
         self.identity = identity
         config = dict(model=str(receiver), checkpoint=str(weight), checkpoint_sha256=identity,
                       method=case.method, max_model_len=max_model_len,
-                      max_num_seqs=max_num_seqs, memory_fraction=memory_fraction)
+                      max_num_seqs=max_num_seqs, memory_fraction=memory_fraction,
+                      persistent=self.persistent)
         if case.method == 'lora':
             directory = self.directory / 'adapter'
             export_lora(self.weight, directory, Path(receiver))
             config['adapter_dir'] = str(directory)
         atomic_json(self.directory / 'config.json', config)
         env = dict(os.environ)
+        env['PATH'] = str(Path(worker_python or sys.executable).absolute().parent) + os.pathsep + env.get('PATH', '')
         for key in list(env):
             if key in {'RANK', 'WORLD_SIZE', 'LOCAL_RANK', 'LOCAL_WORLD_SIZE', 'MASTER_ADDR',
                        'MASTER_PORT', 'GROUP_RANK', 'ROLE_RANK', 'ROLE_WORLD_SIZE'} or key.startswith('TORCHELASTIC_'):
@@ -147,6 +165,8 @@ class VLLMDecoder:
         env['PYTHONPATH'] = str(Path(__file__).resolve().parents[1]) + os.pathsep + env.get('PYTHONPATH', '')
         self.log = (self.directory / 'worker.log').open('a')
         try:
+            from qwen3.vllm_decode import prepare_worker_memory
+            prepare_worker_memory(actor.student.device if actor is not None else device, self.directory)
             self.process = subprocess.Popen([str(worker_python or sys.executable), '-u', '-m',
                 'qwen35.vllm_worker', '--directory', str(self.directory)],
                 env=env, stdin=subprocess.PIPE, stdout=self.log, stderr=subprocess.STDOUT,
@@ -168,6 +188,30 @@ class VLLMDecoder:
         if not data.get('complete'):
             raise RuntimeError(f'Qwen3.5 vLLM worker failed: {data.get("error")}')
         return data
+
+    def _control(self, command, **payload):
+        if not self.persistent:
+            raise RuntimeError('Worker controls require a persistent frozen receiver')
+        self.control_counter += 1
+        destination = self.directory / f'control-{self.control_counter:05d}.json'
+        self.process.stdin.write(json.dumps(dict(command=command, result=str(destination), **payload)) + '\n')
+        self.process.stdin.flush()
+        return self._wait(destination)
+
+    def activate(self, weight, *, weight_source):
+        identity = weight_identity(self.case, weight, weight_source)
+        self._control('set_checkpoint', checkpoint_sha256=identity)
+        self.identity, self.weight = identity, Path(weight)
+        if self.sleeping:
+            from qwen3.vllm_decode import prepare_worker_memory
+            prepare_worker_memory(self.actor.student.device, self.directory)
+            self._control('wake')
+            self.sleeping = False
+
+    def sleep(self):
+        if not self.sleeping:
+            self._control('sleep')
+            self.sleeping = True
 
     def _export(self, row, cap, count, seed_override=None, seed_base=1234, training=False):
         prompt = row['prompt_token_ids']
@@ -242,6 +286,8 @@ class VLLMDecoder:
             self.process.stdin.write(json.dumps({'request': str(request), 'result': str(response)}) + '\n')
             self.process.stdin.flush()
             received = self._wait(response)['rows']
+            if self.persistent and any(row.get('checkpoint_sha256') != self.identity for row in received):
+                raise RuntimeError('Qwen3.5 response uses a stale bridge checkpoint')
             if [(row['index'], row['sample_index'], row['sampling_seed']) for row in received] != [
                     (row['index'], row['sample_index'], row['sampling_seed']) for row in requests]:
                 raise RuntimeError('Qwen3.5 vLLM response order/seed/coverage differs')
@@ -282,7 +328,99 @@ class VLLMDecoder:
         self.close()
 
 
-from contextlib import contextmanager
+_training_decoder = ContextVar('qwen35_training_decoder', default=None)
+
+
+class TrainingDecoders:
+    """Reuse frozen receivers per rank/runtime budget; all are asleep between phases.
+
+    CLI validation has different memory/sequence budgets from rollout. Keep one
+    engine per profile without changing either budget. API fit uses one profile.
+    """
+
+    def __init__(self, output, max_model_len):
+        self.output = Path(output)
+        self.max_model_len = max_model_len
+        self.workers = {}
+        self.busy = False
+
+    @contextmanager
+    def borrow(self, case, receiver, weight, output, *, actor, **options):
+        if self.busy:
+            raise RuntimeError('Concurrent use of training decoders is unsupported')
+        weight_source = options.pop('weight_source', 'release')
+        normalized = dict(memory_fraction=.22, max_model_len=36864, max_num_seqs=16,
+                          worker_python=None, device=None)
+        normalized.update(options)
+        normalized['max_model_len'] = max(normalized['max_model_len'], self.max_model_len)
+        # Context is fixed across training minibatches. Other runtime limits, the
+        # actor and the frozen backbone must match before an engine can be reused.
+        key = (id(actor), case.method, str(Path(receiver).resolve()),
+               tuple((name, str(value)) for name, value in sorted(normalized.items()) if name != 'device'))
+        self.busy = True
+        try:
+            if key not in self.workers:
+                self.workers[key] = VLLMDecoder(case, receiver, weight, self.output,
+                    actor=actor, weight_source=weight_source, persistent=True, **normalized)
+            decoder = self.workers[key]
+            decoder.activate(weight, weight_source=weight_source)
+            start = decoder.counter
+            yield decoder
+            decoder.sleep()
+            atomic_json(Path(output) / 'worker-reuse.json', dict(complete=True,
+                worker_directory=str(decoder.directory), worker_pid=decoder.process.pid,
+                checkpoint_sha256=decoder.identity, first_request=start + 1,
+                last_request=decoder.counter, sleeping=True))
+        except BaseException:
+            self.close()
+            raise
+        finally:
+            self.busy = False
+
+    def close(self):
+        workers, self.workers = self.workers, {}
+        try:
+            for decoder in workers.values():
+                decoder.close()
+        finally:
+            self.busy = False
+
+
+@contextmanager
+def training_decoder_scope(output, *, max_model_len, mode='persistent'):
+    if mode not in ('persistent', 'restart'):
+        raise ValueError('rollout_worker_mode must be persistent or restart')
+    if _training_decoder.get() is not None:
+        raise RuntimeError('Nested Qwen3.5 training decoder scopes are unsupported')
+    pool = TrainingDecoders(output, max_model_len) if mode == 'persistent' else None
+    token = _training_decoder.set(pool)
+    try:
+        yield
+    finally:
+        _training_decoder.reset(token)
+        if pool is not None:
+            pool.close()
+
+
+def reserve_training_context(max_model_len):
+    """Fix the pool's context floor after CLI preflight loads the signed splits."""
+    pool = _training_decoder.get()
+    if pool is not None:
+        if pool.workers:
+            raise RuntimeError('Cannot change context after starting training workers')
+        pool.max_model_len = max_model_len
+
+
+@contextmanager
+def decoder_session(case, receiver, weight, output, *, actor=None, **options):
+    pool = _training_decoder.get()
+    if pool is not None and actor is not None and case.method in ('bridge', 'random'):
+        with pool.borrow(case, receiver, weight, output, actor=actor, **options) as decoder:
+            yield decoder
+    else:
+        with VLLMDecoder(case, receiver, weight, output, actor=actor, **options) as decoder:
+            yield decoder
+
 
 @contextmanager
 def training_decoder(actor, case, receiver, output, *, cap, prompt_length, worker_python=None):
@@ -294,9 +432,9 @@ def training_decoder(actor, case, receiver, output, *, cap, prompt_length, worke
         save_file({key: value.detach().cpu().contiguous().clone()
                    for key, value in actor.inference_state().items()}, weight)
     try:
-        with VLLMDecoder(case, receiver, weight, directory,
+        with decoder_session(case, receiver, weight, directory,
                 actor=actor if case.method in ('bridge', 'random') else None,
-                worker_python=worker_python, device=actor.student.device,
+                worker_python=worker_python, device=actor.student.device, weight_source='inference',
                 max_model_len=max(3072, cap + prompt_length)) as decoder:
             yield decoder
     except BaseException:

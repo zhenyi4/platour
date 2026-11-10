@@ -1,6 +1,5 @@
-# Qwen3.5 capabilities from main's training environment, independently of GPU count.
-# Install after the release's Torch/Transformers/FLA environment.
-# causal-conv1d is installed separately from an ABI-matched upstream wheel.
+# Qwen3.5 capabilities included by the default unified runtime, regardless of GPU count.
+# unified-runtime.txt also supplies the ABI-matched causal-conv1d wheel.
 flash-linear-attention==0.5.2
 peft==0.19.1
 datasets==5.1.0

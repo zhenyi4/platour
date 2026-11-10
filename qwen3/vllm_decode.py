@@ -11,6 +11,8 @@ import subprocess
 import sys
 import time
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 import torch
 from safetensors.torch import save_file
@@ -96,10 +98,10 @@ class VLLMDecoder:
     def __init__(self, bridge, directory: Path, *, max_model_len: int,
                  memory_fraction: float = .25, max_num_seqs: int = 16,
                  max_num_batched_tokens: int | None = None, prefill_batch_size: int = 8,
-                 worker_python: str | None = None):
+                 worker_python: str | None = None, persistent: bool = False):
         if worker_python is None and importlib.util.find_spec('vllm') is None:
-            raise RuntimeError('vLLM is required for evaluation; install the vllm extra or '
-                               'supply --vllm-python for an isolated vLLM 0.17.1 runtime')
+            raise RuntimeError('vLLM 0.17.1 is required in the project Python; '
+                               'install with python scripts/install_environment.py')
         if bridge.receiver.device.type != 'cuda':
             raise ValueError('Native vLLM evaluation requires a CUDA receiver')
         if getattr(bridge.receiver.config, 'use_sliding_window', False):
@@ -107,6 +109,9 @@ class VLLMDecoder:
         if prefill_batch_size < 1 or max_num_seqs < 1:
             raise ValueError('Positive batch and active-sequence budgets are required')
         self.prefill_batch_size = prefill_batch_size
+        self.persistent = persistent
+        self.sleeping = False
+        self.control_counter = 0
         self.bridge = bridge
         self.identity = bridge_digest(bridge)
         self.directory = Path(directory) / ('vllm-' + uuid.uuid4().hex[:12])
@@ -118,9 +123,11 @@ class VLLMDecoder:
         config = dict(model=str(bridge.receiver.config._name_or_path),
                       checkpoint_sha256=self.identity, max_model_len=max_model_len,
                       memory_fraction=memory_fraction, max_num_seqs=max_num_seqs,
-                      max_num_batched_tokens=max_num_batched_tokens)
+                      max_num_batched_tokens=max_num_batched_tokens,
+                      persistent=persistent)
         atomic_json(config, self.directory / 'config.json')
         env = dict(os.environ)
+        env['PATH'] = str(Path(worker_python or sys.executable).absolute().parent) + os.pathsep + env.get('PATH', '')
         visible = env.get('CUDA_VISIBLE_DEVICES')
         index = bridge.receiver.device.index or 0
         env['CUDA_VISIBLE_DEVICES'] = visible.split(',')[index] if visible else str(index)
@@ -156,6 +163,31 @@ class VLLMDecoder:
             raise RuntimeError(f'vLLM worker failed: {value.get("error")}; '
                                f'inspect {self.directory / "worker.log"}')
         return value
+
+    def _control(self, command, **payload):
+        if not self.persistent:
+            raise RuntimeError('Worker controls require a persistent bridge decoder')
+        self.control_counter += 1
+        result = self.directory / f'control-{self.control_counter:05d}.json'
+        self.process.stdin.write(json.dumps(dict(command=command, result=str(result), **payload)) + '\n')
+        self.process.stdin.flush()
+        return self._wait(result)
+
+    def activate(self):
+        """Refresh the bridge version; the worker's receiver weights stay frozen."""
+        identity = bridge_digest(self.bridge)
+        self._control('set_checkpoint', checkpoint_sha256=identity)
+        self.identity = identity
+        if self.sleeping:
+            prepare_worker_memory(self.bridge.receiver.device, self.directory)
+            self._control('wake')
+            self.sleeping = False
+
+    def sleep(self):
+        """Offload receiver weights and discard KV allocations before HF backward."""
+        if not self.sleeping:
+            self._control('sleep')
+            self.sleeping = True
 
     def _export_batch(self, rows: list[dict]) -> list[dict]:
         from torch.nn.attention import SDPBackend, sdpa_kernel
@@ -208,6 +240,9 @@ class VLLMDecoder:
         expected = [(row['index'], row['sample_index']) for row in requests]
         if [(row['index'], row['sample_index']) for row in output] != expected:
             raise RuntimeError('vLLM returned incomplete or reordered responses')
+        if getattr(self, 'persistent', False) and any(
+                row.get('checkpoint_sha256') != self.identity for row in output):
+            raise RuntimeError('vLLM returned responses from a stale bridge checkpoint')
         for path in self.memory.glob('*.safetensors'):
             path.unlink()
         return output
@@ -243,6 +278,89 @@ class VLLMDecoder:
 
     def __exit__(self, *_):
         self.close()
+
+
+_training_decoder = ContextVar('qwen3_training_decoder', default=None)
+
+
+class TrainingDecoder:
+    """One frozen receiver engine per rank and fit invocation, asleep between uses."""
+
+    def __init__(self, bridge, output, max_model_len):
+        self.bridge = bridge
+        self.output = Path(output)
+        self.max_model_len = max_model_len
+        self.decoder = None
+        self.options = None
+        self.busy = False
+
+    @contextmanager
+    def borrow(self, directory, **options):
+        if self.busy:
+            raise RuntimeError('Concurrent use of a training decoder is unsupported')
+        requested = options.pop('max_model_len')
+        if requested > self.max_model_len:
+            raise ValueError('Training decoder context budget exceeded')
+        # Context size is fixed across the run; preserve all other runtime budgets.
+        normalized = dict(memory_fraction=.25, max_num_seqs=16,
+                          max_num_batched_tokens=None, prefill_batch_size=8,
+                          worker_python=None)
+        normalized.update(options)
+        if self.options is not None and normalized != self.options:
+            raise ValueError('Training decoder runtime budgets changed within one run')
+        self.busy = True
+        try:
+            if self.decoder is None:
+                self.options = normalized
+                self.decoder = VLLMDecoder(self.bridge, self.output,
+                    max_model_len=self.max_model_len, persistent=True, **normalized)
+            self.decoder.activate()
+            start = self.decoder.counter
+            yield self.decoder
+            self.decoder.sleep()
+            directory = Path(directory)
+            directory.mkdir(parents=True, exist_ok=True)
+            atomic_json(dict(complete=True, worker_directory=str(self.decoder.directory),
+                worker_pid=self.decoder.process.pid, checkpoint_sha256=self.decoder.identity,
+                first_request=start + 1, last_request=self.decoder.counter,
+                sleeping=True), directory / 'worker-reuse.json')
+        except BaseException:
+            self.close()
+            raise
+        finally:
+            self.busy = False
+
+    def close(self):
+        if self.decoder is not None:
+            self.decoder.close()
+            self.decoder = None
+
+
+@contextmanager
+def training_decoder_scope(bridge, output, *, max_model_len, mode='persistent'):
+    if mode not in ('persistent', 'restart'):
+        raise ValueError('rollout_worker_mode must be persistent or restart')
+    if _training_decoder.get() is not None:
+        raise RuntimeError('Nested Qwen3 training decoder scopes are unsupported')
+    pool = TrainingDecoder(bridge, output, max_model_len) if mode == 'persistent' else None
+    token = _training_decoder.set(pool)
+    try:
+        yield
+    finally:
+        _training_decoder.reset(token)
+        if pool is not None:
+            pool.close()
+
+
+@contextmanager
+def decoder_session(bridge, directory, **options):
+    pool = _training_decoder.get()
+    if pool is not None and pool.bridge is bridge:
+        with pool.borrow(directory, **options) as decoder:
+            yield decoder
+    else:
+        with VLLMDecoder(bridge, directory, **options) as decoder:
+            yield decoder
 
 
 class ReceiverOnlyDecoder(VLLMDecoder):
@@ -298,6 +416,7 @@ class ReceiverOnlyDecoder(VLLMDecoder):
                          memory_fraction=memory_fraction, max_num_seqs=max_num_seqs,
                          max_num_batched_tokens=None), self.directory / 'config.json')
         env = dict(os.environ)
+        env['PATH'] = str(Path(worker_python or sys.executable).absolute().parent) + os.pathsep + env.get('PATH', '')
         visible = env.get('CUDA_VISIBLE_DEVICES')
         index = actor.student.device.index or 0
         env['CUDA_VISIBLE_DEVICES'] = visible.split(',')[index] if visible else str(index)

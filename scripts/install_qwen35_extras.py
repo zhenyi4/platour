@@ -1,4 +1,4 @@
-"""Complete an existing Qwen3.5 HF environment without replacing its core stack."""
+"""Check Qwen3.5 kernels or complete an existing runtime; new installs use install_environment.py."""
 import argparse
 from datetime import datetime, timezone
 import importlib
@@ -104,12 +104,20 @@ def main():
             not (torch.version.cuda or '').startswith('12.') or not torch._C._GLIBCXX_USE_CXX11_ABI):
         raise RuntimeError('Pinned wheel requires Linux x86_64, Python 3.11, Torch 2.10 CUDA 12, CXX11 ABI')
     pins = {name: metadata.version(name) for name in CORE}
+    try:
+        pins['vllm'] = metadata.version('vllm')
+    except metadata.PackageNotFoundError as error:
+        raise RuntimeError('The default runtime now includes vLLM. Create a fresh shared '
+                           'environment with scripts/install_environment.py') from error
+    if pins['vllm'] != '0.17.1' or pins['transformers'] != '5.17.0':
+        raise RuntimeError('Use scripts/install_environment.py for the pinned shared runtime; '
+                           'this supplemental installer preserves existing core versions')
     pins.update({name: value for name, value in versions().items() if name.lower().startswith('nvidia-')})
     requested = [line for line in REQUIREMENTS.read_text().splitlines() if line and not line.startswith('#')]
     processes = active_users()
     print(json.dumps({'python': sys.executable, 'uv': uv, 'preserved_versions': pins,
         'supplemental_requirements': requested, 'causal_conv1d_wheel': WHEEL,
-        'other_venv_processes': processes, 'generation_environment_modified': False}, indent=2), flush=True)
+        'other_venv_processes': processes, 'vllm_shares_python': 'vllm' in pins}, indent=2), flush=True)
     if args.dry_run:
         return
     if processes:
@@ -121,11 +129,14 @@ def main():
     constraints = output / 'preserve-core.txt'
     constraints.write_text(''.join(f'{name}=={value}\n' for name, value in sorted(pins.items())))
     command = [uv, 'pip', 'install', '--python', sys.executable]
+    if pins.get('vllm') == '0.17.1' and pins['transformers'] == '5.17.0':
+        command += ['--override', str(ROOT / 'requirements/unified-overrides.txt')]
     subprocess.run([*command, '--constraint', str(constraints), '-r', str(REQUIREMENTS),
                     'causal-conv1d @ ' + WHEEL_URL], check=True)
     # Refresh editable module registration after new top-level modules were added.
     subprocess.run([*command, '--no-deps', '--no-build-isolation', '-e', str(ROOT)], check=True)
-    subprocess.run([uv, 'pip', 'check', '--python', sys.executable], check=True)
+    subprocess.run([sys.executable, '-B', str(ROOT / 'scripts/install_environment.py'),
+                    '--audit-only'], check=True)
     (output / 'after.json').write_text(json.dumps(versions(), indent=2))
     for name, expected in pins.items():
         if metadata.version(name) != expected:

@@ -503,7 +503,8 @@ def legacy_main(argv=None):
     parser.add_argument('--tr-lora-rank', type=int, default=128)
     parser.add_argument('--control-objective', choices=('sft', 'grpo'), default='grpo')
     parser.add_argument('--backend', choices=('vllm',), default='vllm')
-    parser.add_argument('--vllm-python', type=Path)
+    parser.add_argument('--vllm-python', type=Path,
+                             help='Optional vLLM interpreter override; defaults to current project Python')
     args = parser.parse_args(argv)
     try:
         args.controls = selected_controls(args.controls)

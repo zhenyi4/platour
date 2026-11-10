@@ -44,10 +44,16 @@ class Qwen35HybridMemoryConnector(KVConnectorBase_V1, SupportsHMA):
             raise ValueError('Use one recurrent state per request')
         self.directory = Path(self._kv_transfer_config.get_from_extra_config('storage_path', None))
         self.checkpoint = self._kv_transfer_config.get_from_extra_config('checkpoint_sha256', None)
+        self.checkpoint_state = self._kv_transfer_config.get_from_extra_config('checkpoint_state_path', None)
         self.mode = self._kv_transfer_config.get_from_extra_config('bridge_mode', None)
         self.groups = kv_cache_config.kv_cache_groups if kv_cache_config else []
         self.pending = {}
         self.caches = {}
+
+    def current_checkpoint(self):
+        if self.checkpoint_state is None:
+            return self.checkpoint
+        return json.loads(Path(self.checkpoint_state).read_text())['checkpoint_sha256']
 
     def register_kv_caches(self, kv_caches):
         self.caches = kv_caches
@@ -60,9 +66,10 @@ class Qwen35HybridMemoryConnector(KVConnectorBase_V1, SupportsHMA):
         count = int(params['prefix_tokens'])
         if not 0 < count == len(ids) - 1 or num_computed_tokens != 0:
             raise ValueError('Import full original prompt memory before the HF handoff token')
-        if params.get('checkpoint_sha256') != self.checkpoint:
+        checkpoint = self.current_checkpoint()
+        if params.get('checkpoint_sha256') != checkpoint:
             raise ValueError('Qwen3.5 bridge checkpoint identity differs')
-        key = memory_key(ids[:count], self.checkpoint, self.mode)
+        key = memory_key(ids[:count], checkpoint, self.mode)
         if key != params['memory_key'] or not (self.directory / (key + '.safetensors')).is_file():
             raise FileNotFoundError('Missing Qwen3.5 hybrid prefix memory')
         return count, False
@@ -92,7 +99,7 @@ class Qwen35HybridMemoryConnector(KVConnectorBase_V1, SupportsHMA):
             with safetensors.safe_open(self.directory / (request.key + '.safetensors'),
                                        framework='pt', device='cpu') as handle:
                 info = handle.metadata() or {}
-                expected = dict(format=FORMAT, checkpoint_sha256=self.checkpoint,
+                expected = dict(format=FORMAT, checkpoint_sha256=self.current_checkpoint(),
                                 bridge_mode=self.mode, prefix_tokens=str(request.tokens),
                                 memory_key=request.key)
                 if any(info.get(k) != v for k, v in expected.items()):

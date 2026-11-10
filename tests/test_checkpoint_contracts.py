@@ -36,16 +36,18 @@ class CheckpointContracts(unittest.TestCase):
                      patch('qwen35.vllm_decode.export_lora'), \
                      patch('qwen35.cli.train_step', return_value={} ), \
                      patch('qwen35.model.verify_standard_weight') as release_check:
+                    spawn.return_value.pid = 123
                     receipt = session.fit(fixture.train, fixture.val, output=Path(tmp)/'run',
                         objective='grpo', validation_samples=1, smoke=True, max_steps=1, batch_size=2,
                         response_cap=4, vllm_python=Path(sys.executable))
                     self.assertEqual(receipt['selected_step'], 0)
-                    self.assertEqual(spawn.call_count, 2)
+                    self.assertEqual(spawn.call_count, 1 if method in ('bridge', 'random') else 2)
                     release_check.assert_not_called()
                     weight = session._current
                     weight.write_bytes(b'changed')
                     with self.assertRaisesRegex(ValueError, 'SHA differs'):
-                        session._decoder(Path(tmp)/'tampered', 4, Path(sys.executable), 2)
+                        with session._decoder(Path(tmp)/'tampered', 4, Path(sys.executable), 2):
+                            pass
 
     def test_q35_release_still_requires_published_identity(self):
         from qwen35.vllm_decode import VLLMDecoder

@@ -3,8 +3,11 @@
 import argparse
 import importlib.metadata
 import json
+import os
 from pathlib import Path
+import re
 import sys
+import time
 import traceback
 
 from .checkpoints import atomic_json
@@ -15,6 +18,12 @@ def main():
     parser.add_argument('--directory', type=Path, required=True)
     directory = parser.parse_args().directory
     config = json.loads((directory / 'config.json').read_text())
+    persistent = config.get('persistent', False)
+    if persistent and config.get('receiver_only'):
+        raise ValueError('Persistent prefix decoding requires a frozen receiver')
+    checkpoint_state = directory / 'active-checkpoint.json'
+    if persistent:
+        atomic_json(dict(checkpoint_sha256=config['checkpoint_sha256']), checkpoint_state)
     version = importlib.metadata.version('vllm')
     if version != '0.17.1':
         raise RuntimeError(f'Prefix connector requires vLLM 0.17.1; installed {version}')
@@ -36,14 +45,20 @@ def main():
                    enable_prefix_caching=False,
                    attention_config={'backend': 'FLASH_ATTN', 'flash_attn_version': 2},
                    generation_config='vllm', mamba_cache_mode='none', disable_log_stats=True)
+    if persistent:
+        options['enable_sleep_mode'] = True
     if not config.get('receiver_only'):
         options['kv_transfer_config'] = dict(kv_connector='PLatourPrefixConnector',
             kv_role='kv_consumer', kv_connector_module_path='qwen3.vllm_connector',
             kv_connector_extra_config=dict(storage_path=str(directory / 'memory'),
                                            checkpoint_sha256=config['checkpoint_sha256']))
+        if persistent:
+            options['kv_transfer_config']['kv_connector_extra_config']['checkpoint_state_path'] = str(checkpoint_state)
     llm = LLM(**options)
+    sleeping = False
     atomic_json(dict(complete=True, backend='vllm', version=version,
-                     prefix_caching=False, max_model_len=config['max_model_len']),
+                     prefix_caching=False, max_model_len=config['max_model_len'],
+                     persistent=persistent, worker_pid=os.getpid()),
                 directory / 'ready.json')
     try:
         for line in sys.stdin:
@@ -52,8 +67,36 @@ def main():
                 break
             destination = Path(message['result'])
             try:
+                command = message.get('command')
+                if command is not None:
+                    started = time.monotonic()
+                    if not persistent or llm.llm_engine.has_unfinished_requests():
+                        raise RuntimeError('Worker control requires an idle persistent engine')
+                    if command == 'set_checkpoint':
+                        identity = message['checkpoint_sha256']
+                        if not isinstance(identity, str) or re.fullmatch('[0-9a-f]{64}', identity) is None:
+                            raise ValueError('Invalid bridge checkpoint digest')
+                        config['checkpoint_sha256'] = identity
+                        atomic_json(dict(checkpoint_sha256=identity), checkpoint_state)
+                    elif command == 'sleep' and not sleeping:
+                        llm.sleep(level=1)
+                        sleeping = True
+                    elif command == 'wake' and sleeping:
+                        llm.wake_up()
+                        sleeping = False
+                    else:
+                        raise ValueError('Invalid worker lifecycle transition')
+                    atomic_json(dict(complete=True, command=command, sleeping=sleeping,
+                        checkpoint_sha256=config['checkpoint_sha256'], worker_pid=os.getpid(),
+                        elapsed_seconds=time.monotonic()-started), destination)
+                    continue
+                if sleeping:
+                    raise RuntimeError('Cannot generate while receiver is asleep')
                 request = json.loads(Path(message['request']).read_text())
                 rows, cap = request['rows'], request['cap']
+                if persistent and any(row['transfer'].get('checkpoint_sha256') !=
+                                      config['checkpoint_sha256'] for row in rows):
+                    raise ValueError('Rollout uses a stale bridge checkpoint')
                 if any(len(row['prompt_token_ids']) + cap > config['max_model_len']
                        for row in rows):
                     raise ValueError('Prompt and response exceed declared context budget')

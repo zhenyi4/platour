@@ -24,11 +24,12 @@ def require_vllm_python(python: Path | None = None) -> str:
             'import importlib.metadata as m; print(m.version("vllm"))'],
             capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.TimeoutExpired) as error:
-        raise RuntimeError('Cannot start the isolated vLLM decoder Python; '
-                           'check --vllm-python on this machine') from error
+        raise RuntimeError('Cannot start the vLLM worker Python; check the active environment '
+                           'or the optional --vllm-python override') from error
     if check.returncode or check.stdout.strip() != '0.17.1':
-        raise RuntimeError('Evaluation requires vLLM 0.17.1 in the decoder Python; '
-                           'set --vllm-python to an isolated compatible runtime')
+        raise RuntimeError('Training and evaluation require vLLM 0.17.1 in the current Python. '
+                           'Install with python scripts/install_environment.py and activate it; '
+                           '--vllm-python is an optional interpreter override')
     return executable
 
 

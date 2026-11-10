@@ -421,7 +421,7 @@ class CheckpointTests(unittest.TestCase):
             with patch('qwen35.cli.inputs', return_value=samples), \
                  patch('qwen35.cli._model', side_effect=lambda *_a, **_kw: (TinyActor(), None)), \
                  patch('qwen35.cli.train_step', side_effect=update), \
-                 patch('qwen35.vllm_decode.VLLMDecoder'), patch('qwen35.cli.evaluate_vllm', side_effect=score), \
+                 patch('qwen35.vllm_decode.decoder_session'), patch('qwen35.cli.evaluate_vllm', side_effect=score), \
                  patch('qwen35.cli._final_test', side_effect=lambda *a, **k: tested.append(a[2])):
                 run_train(case, arguments)
                 self.assertEqual(trained, [1, 2, 3, 4])
@@ -476,7 +476,7 @@ class CheckpointTests(unittest.TestCase):
             with patch('qwen35.cli.inputs', return_value=samples), \
                  patch('qwen35.cli._model', side_effect=lambda *_a, **_kw: (TinyActor(), None)), \
                  patch('qwen35.cli.train_step', side_effect=update), \
-                 patch('qwen35.vllm_decode.VLLMDecoder'), patch('qwen35.cli.evaluate_vllm', side_effect=score), \
+                 patch('qwen35.vllm_decode.decoder_session'), patch('qwen35.cli.evaluate_vllm', side_effect=score), \
                  patch('qwen35.cli._final_test'):
                 run_train(case, arguments)
 
@@ -1855,7 +1855,7 @@ class CheckpointTests(unittest.TestCase):
             with patch('qwen35.cli.inputs', return_value=samples), \
                  patch('qwen35.cli._model', side_effect=lambda *_a, **_kw: (TinyActor(), None)), \
                  patch('qwen35.cli.train_step', side_effect=update), \
-                 patch('qwen35.vllm_decode.VLLMDecoder'), patch('qwen35.cli.evaluate_vllm', side_effect=score):
+                 patch('qwen35.vllm_decode.decoder_session'), patch('qwen35.cli.evaluate_vllm', side_effect=score):
                 with self.assertRaisesRegex(RuntimeError, 'judge deadline'):
                     run_train(case, arguments)
                 self.assertEqual(trained, [1])
@@ -1923,7 +1923,7 @@ class CheckpointTests(unittest.TestCase):
                      patch('qwen35.cli._model', side_effect=lambda *_a, **_kw: (TinyActor(), None)), \
                      patch('qwen35.cli.train_step', side_effect=train_step_toy), \
                      patch('qwen35.cli.evaluate_vllm', side_effect=validate_toy), \
-                     patch('qwen35.vllm_decode.VLLMDecoder', TinyDecoder):
+                     patch('qwen35.vllm_decode.decoder_session', TinyDecoder):
                     with self.assertRaisesRegex(RuntimeError, 'isolated judge interrupted'):
                         run_train(case, args)
                     self.assertEqual(int(latest(args.output).name[5:]), 1)
@@ -1998,7 +1998,7 @@ class CheckpointTests(unittest.TestCase):
                      patch('qwen35.cli._model', side_effect=lambda *_a, **_kw: (TinyActor(), None)), \
                      patch('qwen35.cli.train_step', side_effect=update), \
                      patch('qwen35.cli.evaluate_vllm', side_effect=validate), \
-                     patch('qwen35.vllm_decode.VLLMDecoder', TinyDecoder):
+                     patch('qwen35.vllm_decode.decoder_session', TinyDecoder):
                     run_train(case, args)
                 report = json.loads((args.output / 'complete.json').read_text())
                 self.assertTrue(report['smoke_only'])
@@ -2046,7 +2046,7 @@ class CheckpointTests(unittest.TestCase):
                      patch('qwen35.cli._model', return_value=(
                          SimpleNamespace(load_public=lambda *_: None), None)), \
                      patch('transformers.AutoTokenizer.from_pretrained', return_value=None), \
-                     patch('qwen35.vllm_decode.VLLMDecoder', Decoder), \
+                     patch('qwen35.vllm_decode.decoder_session', Decoder), \
                      patch('qwen35.cli.evaluate_vllm', side_effect=score):
                     run_eval(select(identifier), args)
                 self.assertEqual(calls, [(2, 2, 512)] * 3)

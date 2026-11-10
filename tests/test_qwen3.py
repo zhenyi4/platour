@@ -2317,7 +2317,7 @@ class PublicReleaseTests(unittest.TestCase):
                     '--samples', '1', '--dt-samples', '2', '--batch-size', '1',
                     '--response-cap', '1', '--tr-lora-rank', '2', '--control-objective', 'sft',
                     '--backend', 'vllm', '--output', str(output)]
-            with patch('sys.argv', argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.VLLMDecoder', pact_decoder), patch('platour_api.PLatourSession.load', side_effect=base), \
+            with patch('sys.argv', argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.decoder_session', pact_decoder), patch('platour_api.PLatourSession.load', side_effect=base), \
                  patch('platour_api.ReceiverSession.load', side_effect=tr):
                 platour_exps.main()
             report = json.loads((output / 'pact_check.json').read_text())
@@ -2337,7 +2337,7 @@ class PublicReleaseTests(unittest.TestCase):
                     raise AssertionError('Completed SC validation/TEST must be reused')
                 return original_evaluate(system, *args, **kwargs)
             (output / 'pact_check.json').unlink()
-            with patch('sys.argv', argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.VLLMDecoder', pact_decoder), \
+            with patch('sys.argv', argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.decoder_session', pact_decoder), \
                  patch('platour_api.PLatourSession.evaluate', new=no_sc_evaluation), \
                  patch('platour_api.PLatourSession.load', side_effect=base), \
                  patch('platour_api.ReceiverSession.load', side_effect=tr), \
@@ -2356,7 +2356,7 @@ class PublicReleaseTests(unittest.TestCase):
             grpo_argv = argv.copy()
             grpo_argv[grpo_argv.index('sft')] = 'grpo'
             grpo_argv[-1] = str(grpo_output)
-            with patch('sys.argv', grpo_argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.VLLMDecoder', pact_decoder), \
+            with patch('sys.argv', grpo_argv), patch('platour_exps.require_vllm_python'), patch('qwen3.vllm_decode.decoder_session', pact_decoder), \
                  patch('platour_api.PLatourSession.load', side_effect=base), \
                  patch('platour_api.ReceiverSession.load', side_effect=tr):
                 platour_exps.main()

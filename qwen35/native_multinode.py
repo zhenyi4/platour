@@ -568,11 +568,14 @@ def run(root, identifier, node_rank, master_addr, master_port, mode, attempt,
         *, bridge_python=None, generation_python=None, scoring_python=None,
         resume_step=None, wait_seconds=1800, max_seconds=604800):
     """Supervise only this node's newly owned torchrun group; never auto-stop peers."""
+    bridge_python = Path(bridge_python or sys.executable)
+    generation_python = Path(generation_python or bridge_python)
+    scoring_python = Path(scoring_python or bridge_python)
     if mode not in ('probe', 'smoke', 'train') or identifier not in (20, 25):
         raise ValueError('Select a qualified original two-host probe/smoke/train mode')
     if (not 0 < wait_seconds <= 7200 or not 0 < max_seconds <= 604800 or
             not all(Path(p).is_file() for p in (bridge_python, generation_python, scoring_python))):
-        raise ValueError('Three installed training/generation/scoring Python paths and bounded deadlines required')
+        raise ValueError('Installed runtime interpreters and bounded deadlines required')
     command = torchrun_command(root, node_rank, master_addr, master_port, attempt,
                                python=bridge_python)
     root = Path(root).absolute()
@@ -707,8 +710,8 @@ def main():
     parser.add_argument('--master-port', type=int, default=29500)
     parser.add_argument('--attempt', default='first')
     parser.add_argument('--bridge-python', type=Path, default=Path(sys.executable))
-    parser.add_argument('--vllm-python', type=Path)
-    parser.add_argument('--scoring-python', type=Path)
+    parser.add_argument('--vllm-python', type=Path, help='Optional override; defaults to --bridge-python')
+    parser.add_argument('--scoring-python', type=Path, help='Optional override; defaults to --bridge-python')
     parser.add_argument('--resume-step', type=int)
     parser.add_argument('--resume-latest', action='store_true')
     parser.add_argument('--control', type=Path)
@@ -737,8 +740,8 @@ def main():
                                           args.master_port, args.attempt,
                                           python=args.bridge_python) for node in (0, 1)]}, indent=2))
         return
-    if args.node_rank is None or args.vllm_python is None or args.scoring_python is None:
-        parser.error('Run needs node rank and installed vLLM/scoring Pythons')
+    if args.node_rank is None:
+        parser.error('Run needs --node-rank')
     if args.resume_latest:
         if args.resume_step is not None or args.mode != 'train':
             parser.error('--resume-latest needs original formal TRAIN and no explicit step')

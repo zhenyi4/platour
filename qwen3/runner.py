@@ -281,14 +281,14 @@ def grpo_update(bridge: Bridge, tokenizer: object, rows: list[dict],
     denominator = global_groups * group_size
     objective = 0.0
     correct_count = 0
-    from .vllm_decode import VLLMDecoder
+    from .vllm_decode import decoder_session
     from training_protocol import rollout_log_probs
     if 'rollout_output' not in config:
         raise ValueError('GRPO requires a private vLLM rollout output directory')
     selected = [dict(rows[index], index=index) for index in indices]
     if not selected:
         return 0., 0.
-    with torch.no_grad(), VLLMDecoder(bridge, Path(config['rollout_output']) /
+    with torch.no_grad(), decoder_session(bridge, Path(config['rollout_output']) /
             f'step-{step:04d}-rank-{rank()}',
             max_model_len=max(len(row['prompt_token_ids']) for row in selected) + max_tokens,
             worker_python=config.get('vllm_python')) as decoder:
@@ -379,7 +379,7 @@ def evaluate_vllm(bridge: Bridge, tokenizer: object, rows: list[dict], config: d
 
     Under torchrun every rank decodes a disjoint question shard.
     """
-    from .vllm_decode import VLLMDecoder
+    from .vllm_decode import decoder_session
     if not _local and world_size() > 1:
         from .parallel import collective_evaluation
         return collective_evaluation(rows, count, output, lambda local, path: evaluate_vllm(
@@ -399,7 +399,7 @@ def evaluate_vllm(bridge: Bridge, tokenizer: object, rows: list[dict], config: d
     budget = max(3072, required) if choice else required
     correct = total = clipped = 0
     parity = None
-    with VLLMDecoder(bridge, output, max_model_len=budget,
+    with decoder_session(bridge, output, max_model_len=budget,
             memory_fraction=memory_fraction, max_num_seqs=32 if choice else 16,
             max_num_batched_tokens=4096 if choice else None,
             worker_python=worker_python) as decoder:
@@ -653,7 +653,14 @@ def train(config: dict, bridge: Bridge, tokenizer: object, data: list[dict],
           validation: list[dict], output: Path, *, resume: Path | None = None,
           final_test: list[dict] | None = None, split: dict | None = None) -> None:
     """Train one recipe; SFT runs under the reference arithmetic settings."""
-    with reference_sft_numerics() if config["method"] == "sft" else nullcontext():
+    from .vllm_decode import training_decoder_scope
+    from .parallel import rank_output
+    scope = (reference_sft_numerics() if config['method'] == 'sft' else
+             training_decoder_scope(bridge, rank_output(output / 'vllm-worker'),
+                max_model_len=max(3072, max(len(row['prompt_token_ids']) for row in
+                    [*data, *validation, *(final_test or [])]) + config['response_cap']),
+                mode=config.get('rollout_worker_mode', 'persistent')))
+    with scope:
         _train(config, bridge, tokenizer, data, validation, output, resume=resume,
                final_test=final_test, split=split)
 
@@ -710,6 +717,14 @@ def _train(config: dict, bridge: Bridge, tokenizer: object, data: list[dict],
     if config.get('eval_backend', 'vllm') != 'vllm':
         raise ValueError('Generated validation and TEST require vLLM')
     config = dict(config, eval_backend='vllm')
+    if config['method'] == 'grpo':
+        previous = Path(output) / 'training_protocol.json'
+        legacy_restart = (config.get('rollout_worker_mode') == 'restart' and previous.is_file()
+            and 'rollout_worker_mode' not in json.loads(previous.read_text())['resume_identity']['recipe'])
+        if legacy_restart:
+            config.pop('rollout_worker_mode')
+        else:
+            config.setdefault('rollout_worker_mode', 'persistent')
     per_epoch = math.ceil(len(data) / config['batch_size'])
     if not config.get('smoke', False) and config['total_steps'] != 3 * per_epoch:
         raise ValueError('Formal Qwen3 training requires three complete epochs')

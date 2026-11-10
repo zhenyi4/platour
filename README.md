@@ -30,59 +30,22 @@ During prefill, linear projectors map hidden states from sender layers at corres
 
 ## Getting started
 
-Run from a local checkout with Python 3.11 and install the training environment:
+From a local checkout on Linux x86_64 with Python 3.11 and CUDA:
 
 ```sh
-pip install -e . "torch==2.10.0" "transformers==5.17.0" "fla-core==0.5.2" "kernels==0.16.0"
+python3.11 -m pip install --user uv
+python3.11 scripts/install_environment.py
+source .venv/bin/activate
 ```
 
-For Qwen3.5 GPU training, complete the environment after the base install:
+The installer creates `.venv` with the training and generation dependencies
+and checks the GPU runtime. See the [environment guide](docs/ENVIRONMENT.md)
+for installation options and troubleshooting.
 
-```sh
-python scripts/install_qwen35_extras.py
-```
-
-This adds the FLA package, PEFT, data/logging and build tools, and an ABI-matched
-`causal-conv1d` wheel while preserving the installed core stack. The wheel path
-supports Linux x86_64, Python 3.11 and Torch 2.10 with CUDA 12 and CXX11 ABI;
-the installer preserves the system CUDA Toolkit. Use `--dry-run`
-to inspect the plan. Finish active jobs in that environment before installing.
-See [Qwen3.5 environment completion](qwen35/README.md#complete-the-gpu-training-environment).
-
-Use a separate Python environment with **vLLM 0.17.1** for GRPO rollouts and
-validation/test answer generation. Pass its Python executable through
-`--vllm-python`, shown as `/path/to/vllm/bin/python` in the examples below.
-SFT validation measures loss with HF teacher forcing and does not generate answers.
-See the [environment guide](AGENT.md#setup) for dependencies and native-backend requirements.
-
-Before GPU training, check the generation environment with a real FlashAttention
-kernel (a version check alone does not detect driver/PTX incompatibility):
-
-```sh
-/path/to/vllm/bin/python scripts/check_vllm_runtime.py
-```
-
-Run it with the same GPU visibility and library paths as the decoder. This small
-BF16 decode check loads no model and does not qualify every model-specific kernel.
-The vLLM 0.17.1 wheel can contain CUDA 12.9 PTX even when Torch reports CUDA 12.8.
-On supported data-center GPUs with an older driver, follow NVIDIA's
-[forward-compatibility instructions](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html)
-for a matching compatibility package. Put its `compat` directory first in
-`LD_LIBRARY_PATH` **before** starting the check and training; installing the
-package alone does not activate it. System driver upgrades are not performed by
-this repository.
-
-- **Training backbones:** download the sender and receiver beforehand and pass their local directories.
-- **Evaluation backbones:** `--sender` and `--receiver` accept local directories or HF model IDs; missing HF models are downloaded automatically.
-- **Experiment data and released checkpoints:** the relevant entry downloads missing inputs from HF and verifies their hashes. `evaluate` retrieves the released checkpoint when `--weights` is omitted. New PLatour and PLatour-SFT training starts from a zero-initialized bridge.
-
-To prepare all published task data in advance, use `platour-exps download-data --all`;
-add `--include-it` to also retrieve Qwen3 IT inputs. See the
-[data guide](data/README.md) for offline use.
-
-Detailed usage is covered by the [Qwen3 guide](qwen3/README.md) and
-[Qwen3.5 guide](qwen35/README.md). [AGENT.md](AGENT.md) provides instructions
-for coding agents, including distributed training, resume, the Python API and the coding judge.
+Training takes local sender/receiver model directories. Evaluation also accepts
+Hugging Face model IDs; missing backbones, experiment data and released
+checkpoints download automatically. See the [data guide](data/README.md),
+[Qwen3 recipes](qwen3/README.md) and [Qwen3.5 recipes](qwen35/README.md).
 
 ## Train PLatour and PLatour-SFT
 
@@ -102,12 +65,12 @@ fresh output directory for each run.
 platour-exps train --experiment 11 \
   --sender /path/to/Qwen3-8B --receiver /path/to/Qwen3-1.7B \
   --test-data data/qwen3/11_qwen3_8b_to_1p7b_sft_gsm8k/test.jsonl \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/11-platour-sft
+  --output ./outputs/11-platour-sft
 
 # PLatour (GRPO, experiment 17): select by VAL accuracy, then test that checkpoint.
 platour-exps train --experiment 17 \
   --sender /path/to/Qwen3-8B --receiver /path/to/Qwen3-1.7B \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/17-platour-grpo
+  --output ./outputs/17-platour-grpo
 ```
 
 Qwen3 formal training runs for three epochs; Qwen3.5 runs for one epoch.
@@ -168,25 +131,25 @@ topologies; this flag does not make them support arbitrary GPU counts.
 # PLatour-SFT, eight replicas; change only --n-gpu to 1 for single-GPU training.
 platour-exps train --experiment 11 \
   --sender /path/to/Qwen3-8B --receiver /path/to/Qwen3-1.7B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/11-sft-8gpu
+  --n-gpu 8 --output ./outputs/11-sft-8gpu
 
 # PLatour-GRPO, Qwen3.
 platour-exps train --experiment 17 \
   --sender /path/to/Qwen3-8B --receiver /path/to/Qwen3-1.7B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/17-grpo-8gpu
+  --n-gpu 8 --output ./outputs/17-grpo-8gpu
 
 # PLatour-GRPO, Qwen3.5.
 platour-exps train --experiment 19 \
   --sender /path/to/Qwen3.5-35B-A3B --receiver /path/to/Qwen3.5-4B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/19-grpo-8gpu
+  --n-gpu 8 --output ./outputs/19-grpo-8gpu
 
 # PACT inference only; --n-gpu 1 also works for 8B→1.7B.
 platour-exps pact-check --experiment 17 --controls DT IT \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/17-dt-it-8gpu
+  --n-gpu 8 --output ./outputs/17-dt-it-8gpu
 
 # PACT SC/TR training and their tests, with collective validation.
 platour-exps pact-check --experiment 17 --controls SC TR \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/17-sc-tr-8gpu
+  --n-gpu 8 --output ./outputs/17-sc-tr-8gpu
 ```
 
 Portable training splits the global batch across replicas and sums gradients
@@ -209,9 +172,28 @@ fits in memory. Portable grouped training is separate from the frozen native
 backends: historical SFT keeps four ranks/eight GPUs, and native 397B training
 keeps its two-host requirement. Use the portable backend for single-GPU 8B runs.
 
-GPU replica count is not a measured speedup. Portable GRPO still starts a fresh
-vLLM worker per update; active-request limits are unchanged. Floating-point
-reduction and decode batching can produce numerical differences across GPU counts.
+Qwen3 portable bridge/SC GRPO keeps one vLLM receiver worker per replica for
+the training invocation, sharing it across rollouts and validation. The receiver
+is frozen: each use exports fresh HF prefix KV bound to the current bridge hash.
+Between uses, vLLM sleep mode offloads receiver weights to CPU and discards GPU
+KV allocations so HF backward can use the released memory. Workers close on
+completion or exceptions; resume starts fresh workers from the signed state.
+Use `--rollout-worker-mode restart` on portable Qwen3 GRPO training, or
+`PLatourSession.fit(..., rollout_worker_mode="restart")`, to compare with the old
+per-use startup. New runs sign this choice; keep it unchanged on resume. Older
+runs without that field can resume explicitly in `restart` mode.
+
+Qwen3.5 portable frozen-receiver GRPO (bridge/SC/Virtual Sender) also reuses
+workers, with the same CLI flag or `Qwen35Session.fit(...,
+rollout_worker_mode="restart")` for the previous lifecycle. Each rank keeps one
+engine per runtime budget: the API normally shares one across rollout/validation;
+the CLI preserves separate rollout and validation memory/sequence limits. Between
+uses, engines sleep; each activation signs the current bridge/virtual weights and
+both the scheduler and GPU importer reject stale KV/GDN memory. Changed receiver
+weights still require fresh workers in Qwen3 TR and Qwen3.5 full/LoRA training.
+Historical native trainers are unchanged. GPU replica count alone does not
+establish a speedup, and floating-point reduction and decode batching can produce
+different training trajectories. Active-request limits and sampling are unchanged.
 
 ## PACT-Check
 
@@ -242,15 +224,15 @@ platour-exps pact-check --experiment 17 --prepare-only
 
 # Run DT, IT, SC and TR; SC/TR each train for three epochs.
 platour-exps pact-check --experiment 17 \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/17-pact-check
+  --output ./outputs/17-pact-check
 
 # Evaluate IT only, without SC/TR training.
 platour-exps pact-check --experiment 17 --controls IT \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/17-it
+  --output ./outputs/17-it
 
 # Evaluate DT and IT, without SC/TR training.
 platour-exps pact-check --experiment 17 --controls DT IT \
-  --vllm-python /path/to/vllm/bin/python --output ./outputs/17-dt-it
+  --output ./outputs/17-dt-it
 ```
 
 Qwen3.5 uses the `--family qwen35` interface; its SC/TR training budget is one epoch. See the [Qwen3 PACT-Check guide](qwen3/README.md#frozen-it-evaluation-0712-1618)
@@ -276,18 +258,18 @@ you can also specify its HF repository explicitly.
 # Qwen3 PLatour-SFT: evaluate 8B→1.7B GSM8K on one GPU.
 platour-exps evaluate --experiment 11 \
   --sender Qwen/Qwen3-8B --receiver Qwen/Qwen3-1.7B \
-  --n-gpu 1 --vllm-python /path/to/vllm/bin/python --output ./outputs/11-release-eval
+  --n-gpu 1 --output ./outputs/11-release-eval
 
 # Qwen3 PLatour (GRPO): released GSM8K checkpoint, eight one-GPU replicas.
 platour-exps evaluate --experiment 17 \
   --weights zen-E/PLatour-Qwen3-8B-to-1.7B-GSM8K \
   --sender Qwen/Qwen3-8B --receiver Qwen/Qwen3-1.7B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/17-release-eval
+  --n-gpu 8 --output ./outputs/17-release-eval
 
 # Qwen3.5 PLatour (GRPO): 35B→4B DAPO, eight one-GPU replicas.
 platour-exps evaluate --experiment 19 \
   --sender Qwen/Qwen3.5-35B-A3B --receiver Qwen/Qwen3.5-4B \
-  --n-gpu 8 --vllm-python /path/to/vllm/bin/python --output ./outputs/19-release-eval
+  --n-gpu 8 --output ./outputs/19-release-eval
 
 # Optional: download only the released bridge checkpoint, without evaluating.
 platour-exps download --experiment 17

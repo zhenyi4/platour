@@ -1,6 +1,6 @@
 """Run a small real FA2 decode kernel before starting expensive training.
 
-Run this script with the generation environment's Python and the same CUDA
+Run this script with the shared project Python and the same CUDA
 visibility/library environment as the intended decoder. No models are loaded.
 This checks a common failure point, not the complete model-specific runtime.
 """
@@ -16,7 +16,7 @@ def check(device_index=0):
         raise RuntimeError(f'Expected vLLM 0.17.1; found {version}')
     import torch
     if not torch.cuda.is_available():
-        raise RuntimeError('No CUDA GPU is visible to the generation Python')
+        raise RuntimeError('No CUDA GPU is visible to the project Python')
     from vllm.vllm_flash_attn import flash_attn_varlen_func
     torch.cuda.set_device(device_index)
     device = torch.device('cuda', device_index)

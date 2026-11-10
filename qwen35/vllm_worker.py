@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 import sys
+import re
+import time
 import traceback
 
 from .checkpoints import atomic_json
@@ -184,6 +186,12 @@ def main():
     if version != '0.17.1':
         raise RuntimeError(f'Qwen3.5 hybrid memory requires vLLM 0.17.1, got {version}')
     method = cfg['method']
+    persistent = cfg.get('persistent', False)
+    if persistent and method not in ('bridge', 'random'):
+        raise ValueError('Persistent decoding requires a frozen receiver')
+    checkpoint_state = root / 'active-checkpoint.json'
+    if persistent:
+        atomic_json(checkpoint_state, dict(checkpoint_sha256=cfg['checkpoint_sha256']))
     if method == 'lora':
         os.environ['PLATOUR_NATIVE_LORA_GDN_WORKER'] = '1'
         register_gdn_lora()
@@ -211,7 +219,11 @@ def main():
         if method == 'lora':
             shared.update(enable_lora=True, max_lora_rank=128, max_loras=1,
                           max_cpu_loras=1, lora_dtype='bfloat16')
+    if persistent:
+        shared['enable_sleep_mode'] = True
+        shared['kv_transfer_config']['kv_connector_extra_config']['checkpoint_state_path'] = str(checkpoint_state)
     llm = LLM(**shared)
+    sleeping = False
     from vllm.lora.request import LoRARequest
     lora_request = None
     audit = None
@@ -231,7 +243,7 @@ def main():
         lora_request = LoRARequest('published', 1, cfg['adapter_dir'])
     atomic_json(root / 'ready.json', {'complete': True, 'backend': 'vllm',
                                      'version': version, 'method': method,
-                                     'weight_audit': audit})
+                                     'weight_audit': audit, 'persistent': persistent, 'worker_pid': os.getpid()})
     try:
         for line in sys.stdin:
             request = json.loads(line)
@@ -239,8 +251,36 @@ def main():
                 break
             destination = Path(request['result'])
             try:
+                command = request.get('command')
+                if command is not None:
+                    started = time.monotonic()
+                    if not persistent or llm.llm_engine.has_unfinished_requests():
+                        raise RuntimeError('Worker control requires an idle persistent engine')
+                    if command == 'set_checkpoint':
+                        identity = request['checkpoint_sha256']
+                        if not isinstance(identity, str) or re.fullmatch('[0-9a-f]{64}', identity) is None:
+                            raise ValueError('Invalid bridge checkpoint digest')
+                        cfg['checkpoint_sha256'] = identity
+                        atomic_json(checkpoint_state, dict(checkpoint_sha256=identity))
+                    elif command == 'sleep' and not sleeping:
+                        llm.sleep(level=1)
+                        sleeping = True
+                    elif command == 'wake' and sleeping:
+                        llm.wake_up()
+                        sleeping = False
+                    else:
+                        raise ValueError('Invalid worker lifecycle transition')
+                    atomic_json(destination, dict(complete=True, command=command, sleeping=sleeping,
+                        checkpoint_sha256=cfg['checkpoint_sha256'], worker_pid=os.getpid(),
+                        elapsed_seconds=time.monotonic()-started))
+                    continue
+                if sleeping:
+                    raise RuntimeError('Cannot generate while receiver is asleep')
                 batch = json.loads(Path(request['request']).read_text())
                 rows, cap = batch['rows'], batch['cap']
+                if persistent and any(row['transfer'].get('checkpoint_sha256') != cfg['checkpoint_sha256']
+                                      for row in rows):
+                    raise ValueError('Rollout uses a stale bridge checkpoint')
                 if any(len(row['prompt_token_ids']) + cap > cfg['max_model_len']
                        for row in rows):
                     raise ValueError('Qwen3.5 prompt and response exceed context budget')
@@ -266,6 +306,8 @@ def main():
                 for row in rows:
                     output = None if row.get('handoff_is_eos') or row.get('handoff_only') else next(generated)
                     results.append(response_row(row, output, method, cap, tokenizer, batch.get('logprobs', False)))
+                for result in results:
+                    result['checkpoint_sha256'] = cfg['checkpoint_sha256']
                 atomic_json(destination, {'complete': True, 'rows': results})
             except BaseException as error:
                 atomic_json(destination, {'complete': False, 'error': repr(error)})

@@ -224,7 +224,10 @@ def main() -> None:
                              help='Bounded native SFT/GRPO structural check in a fresh output directory')
             cmd.add_argument('--eval-backend', choices=('vllm',), default='vllm',
                              help='GRPO validation and the final SFT/GRPO test; SFT held-out NLL uses HF')
-            cmd.add_argument('--vllm-python', type=Path)
+            cmd.add_argument('--vllm-python', type=Path,
+                             help='Optional vLLM interpreter override; defaults to current project Python')
+            cmd.add_argument('--rollout-worker-mode', choices=('persistent', 'restart'),
+                             help='Portable GRPO: reuse a sleeping receiver engine (default) or restart per use')
         else:
             from .eval_parallel import add_arguments
             add_arguments(cmd)
@@ -234,7 +237,7 @@ def main() -> None:
                              help="Test the recorded checkpoint (new SFT: final; GRPO: validation-best) of this training output")
             cmd.add_argument('--backend', choices=('vllm',), default='vllm')
             cmd.add_argument('--vllm-python', type=Path,
-                             help='Python with vLLM 0.17.1 if installed separately from the HF runtime')
+                             help='Optional vLLM interpreter override; defaults to current project Python')
             cmd.add_argument('--eval-batch-size', type=int, default=32)
             cmd.add_argument('--vllm-memory-fraction', type=float, default=.25)
             cmd.add_argument('--parity-report', action='store_true',
@@ -265,6 +268,10 @@ def main() -> None:
         raise ValueError('--micro-batch is only available for portable SFT')
     if args.action == 'train' and args.train_backend == 'portable':
         config = portable_training_config(config, micro_batch=args.micro_batch)
+    if args.action == 'train' and args.rollout_worker_mode is not None:
+        if args.train_backend != 'portable' or config['method'] != 'grpo':
+            raise ValueError('--rollout-worker-mode is only available for portable GRPO')
+        config['rollout_worker_mode'] = args.rollout_worker_mode
     micro_override = os.environ.get('PLATOUR_SFT_FP8_SMOKE_MICRO_BATCH')
     if micro_override is not None and (not historical_sft or not args.smoke or
             not config['sender'].startswith('Qwen3-235B') or
