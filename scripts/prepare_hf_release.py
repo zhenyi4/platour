@@ -197,8 +197,12 @@ The export uses the project's Apache-2.0 license. The referenced upstream models
         card = card.replace('used for the historical run', 'used for the reproduction run').replace(
             'This export does not attach benchmark results.',
             'The reproduction score above is author-reported.')
-    from qwen35.release_card import add_paper_sections
-    return add_paper_sections(card)
+    from qwen35.release_card import add_paper_sections, update_usage_sections
+    card = add_paper_sections(card)
+    # Legacy Full/LoRA staging has a different format from the published packages.
+    # Update those published cards separately; never change weight/config export.
+    return (update_usage_sections(card, record)
+            if record['artifact_type'] in ('bridge', 'virtual_sender') else card)
 
 
 def dataset_card(group, namespace, tracked):
