@@ -1,0 +1,67 @@
+{
+  "repo_id": "zen-E/PLatour-Qwen3-Data",
+  "revision": "a896cf3ff5c71c477d48ee4e6e8eb5397c3156a7",
+  "parent_revision": "16df3f771c21f5bb574ad8e05264c88aa88af86d",
+  "policy": "published_train_holdout_v2",
+  "plan_sha256": "e66d9714029fe964d36bde6eaf79b298fc6709d620c1d8d1722299604fc9cc89",
+  "remote_verified": true,
+  "jobs": {
+    "13": {
+      "folder": "qwen3/13_qwen3_235b_to_1p7b_grpo_chemistry_cot",
+      "task": "chemistry_cot",
+      "counts": {
+        "train": 1680,
+        "validation": 210,
+        "test": 210
+      }
+    },
+    "14": {
+      "folder": "qwen3/14_qwen3_235b_to_1p7b_grpo_gsm8k",
+      "task": "gsm8k",
+      "counts": {
+        "train": 6973,
+        "validation": 500,
+        "test": 1319
+      }
+    },
+    "15": {
+      "folder": "qwen3/15_qwen3_235b_to_1p7b_grpo_math500",
+      "task": "math500",
+      "counts": {
+        "train": 7000,
+        "validation": 500,
+        "test": 500
+      }
+    },
+    "16": {
+      "folder": "qwen3/16_qwen3_8b_to_1p7b_grpo_chemistry_cot",
+      "task": "chemistry_cot",
+      "counts": {
+        "train": 1680,
+        "validation": 210,
+        "test": 210
+      }
+    },
+    "17": {
+      "folder": "qwen3/17_qwen3_8b_to_1p7b_grpo_gsm8k",
+      "task": "gsm8k",
+      "counts": {
+        "train": 6973,
+        "validation": 500,
+        "test": 1319
+      }
+    },
+    "18": {
+      "folder": "qwen3/18_qwen3_8b_to_1p7b_grpo_math500",
+      "task": "math500",
+      "counts": {
+        "train": 7000,
+        "validation": 500,
+        "test": 500
+      }
+    }
+  },
+  "payload_bytes": 523180573,
+  "payload_files": 68,
+  "protocol_files": 38
+}

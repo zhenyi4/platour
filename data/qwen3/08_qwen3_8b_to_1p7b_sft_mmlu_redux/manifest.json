@@ -1,0 +1,24 @@
+{
+  "experiment_id": 8,
+  "task": "mmlu_redux",
+  "method": "sft",
+  "sender": "Qwen3-8B",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 9900,
+    "validation": 100,
+    "test": 5632
+  },
+  "sha256": {
+    "train": "fcf7318745b43edb9720285f0b254940591038a3d797541d7c615e97899572f4",
+    "validation": "202186084c053b1f8c126b00e547832c22f99d08ccee4bae8f2278654261527c",
+    "test": "ab112131ab81538f80f0402e61317829b15d6496c55f502702b35a2245d3759a",
+    "split": "04e7b335fa5168b0b7b41aeaecc465c2b1cd2c7c6abb2a3eaf26e00855c4be89"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "4c47acfec66cf39e4504cbe2f1e59e77a4cc9dcad84f5436d52e4d9219f2585a",
+    "signed_split_sha256": "7d65ece51c40aea5c3b437ad1ce5d81151f2373dc87c59fb7d8038b247794e9f",
+    "signed_test_input_sha256": "383e24900ca72a437d659b169d491a6d37f83288eac4175bbfe535dcd1d09f84"
+  }
+}

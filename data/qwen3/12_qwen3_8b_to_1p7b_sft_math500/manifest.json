@@ -1,0 +1,24 @@
+{
+  "experiment_id": 12,
+  "task": "math500",
+  "method": "sft",
+  "sender": "Qwen3-8B",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 7425,
+    "validation": 75,
+    "test": 500
+  },
+  "sha256": {
+    "train": "d24e7cb01ef9c77fae25c74f081e9906394459a9f722fa7484252c28149cdcbb",
+    "validation": "8c0d805706cfcdc9c66c574f8388989c5e00edad04fa3841cd5f574739ba3375",
+    "test": "38451b28cdea6ae501f46ae8c5193a82dac00a9a452588bef29877b7731c4f98",
+    "split": "d0f9cc3770936300be73b6feb8289d4fb255fe409666ba0d9fe456f3bd2a57d6"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "d7d32b18c5a07dc2606d5c32f5f469ca7ef79b36f4566deb2784f33e0f6d46a7",
+    "signed_split_sha256": "291ee7767873550404d8c717a82e05f0348cf8324cdab7424d9b0450ed841f7b",
+    "signed_test_input_sha256": "814b5618e6f5c233085fe8965b5e1779ef8e9aa8f5f567acde4fda69a80cc5c9"
+  }
+}

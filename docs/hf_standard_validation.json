@@ -1,0 +1,134 @@
+{
+  "scope": "Actual local standard API loading, exact tensor comparisons and synthetic-prompt generation; not benchmark evaluation.",
+  "dependencies": {
+    "torch": "2.15.0",
+    "transformers": "5.22.1",
+    "peft": "0.21.2"
+  },
+  "base_dependency": {
+    "repo_id": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "historical_training_revision_claimed": false
+  },
+  "load_dtype": "float32",
+  "experiments": {
+    "23": {
+      "kind": "full",
+      "loader": "AutoModelForCausalLM.from_pretrained",
+      "all_loaded_tensors_equal_original": true,
+      "tensors_verified": 427,
+      "loading_info": {
+        "missing_keys": [],
+        "unexpected_keys": [],
+        "mismatched_keys": [],
+        "error_msgs": []
+      },
+      "finite_forward_logits": true,
+      "greedy_generated_token_ids": [
+        14556,
+        248046,
+        198,
+        248044
+      ],
+      "greedy_generated_text": "hello\n",
+      "synthetic_prompt_only": true,
+      "load_dtype": "float32",
+      "transformers": "5.22.1",
+      "exact_fp32_loaded_values_equal_original_bf16_upcast": true,
+      "tensors": 427
+    },
+    "24": {
+      "kind": "lora",
+      "loader": "PeftModel.from_pretrained",
+      "base_loader": "AutoModelForImageTextToText.from_pretrained",
+      "all_loaded_adapter_tensors_equal_original": true,
+      "tensors_verified": 496,
+      "text_decoder_targets": 248,
+      "vision_adapter_targets": 0,
+      "finite_forward_logits": true,
+      "original_project_forward_max_abs_logit_difference": 0.0,
+      "original_project_forward_matches": true,
+      "greedy_generated_token_ids": [
+        14556,
+        248046,
+        198,
+        248044
+      ],
+      "greedy_generated_text": "hello\n",
+      "synthetic_prompt_only": true,
+      "load_dtype": "float32",
+      "transformers": "5.22.1",
+      "peft": "0.21.2"
+    },
+    "29": {
+      "kind": "full",
+      "loader": "AutoModelForCausalLM.from_pretrained",
+      "all_loaded_tensors_equal_original": true,
+      "tensors_verified": 427,
+      "loading_info": {
+        "missing_keys": [],
+        "unexpected_keys": [],
+        "mismatched_keys": [],
+        "error_msgs": []
+      },
+      "finite_forward_logits": true,
+      "greedy_generated_token_ids": [
+        14556,
+        248046,
+        198,
+        248044
+      ],
+      "greedy_generated_text": "hello\n",
+      "synthetic_prompt_only": true,
+      "load_dtype": "float32",
+      "transformers": "5.22.1",
+      "exact_fp32_loaded_values_equal_original_bf16_upcast": true,
+      "tensors": 427
+    },
+    "30": {
+      "kind": "lora",
+      "loader": "PeftModel.from_pretrained",
+      "base_loader": "AutoModelForImageTextToText.from_pretrained",
+      "all_loaded_adapter_tensors_equal_original": true,
+      "tensors_verified": 496,
+      "text_decoder_targets": 248,
+      "vision_adapter_targets": 0,
+      "finite_forward_logits": true,
+      "original_project_forward_max_abs_logit_difference": 0.0,
+      "original_project_forward_matches": true,
+      "greedy_generated_token_ids": [
+        14556,
+        248046,
+        198,
+        248044
+      ],
+      "greedy_generated_text": "hello\n",
+      "synthetic_prompt_only": true,
+      "load_dtype": "float32",
+      "transformers": "5.22.1",
+      "peft": "0.21.2"
+    }
+  },
+  "original_checkpoints_unchanged": {
+    "23": true,
+    "24": true,
+    "29": true,
+    "30": true
+  },
+  "public_artifact_privacy_audit": "passed; tokenizer assets are byte-identical to the pinned public upstream",
+  "source_checks": {
+    "qwen35/hf_export.py": "57a3fab915010846db272038034aa49d67bbdd3d41b2b0d8e3c32d31edb7f4b0",
+    "scripts/verify_hf_exports.py": "93d782fc98ad596b04566129d6b2b5130eba4d8f524129af3cfc54b993fb4dd2"
+  },
+  "regression_checks": {
+    "unique_tests": 133,
+    "passed": 131,
+    "skipped_gpu_dependency": 2,
+    "environment_note": "One existing process-group test raised PermissionError in the module run and passed in an isolated retry."
+  },
+  "limitations": [
+    "BF16 rounding and other device kernels are not covered by the FP32 logit comparison.",
+    "Remote Hub loading was not exercised because no repositories were uploaded."
+  ],
+  "uploaded": false
+}

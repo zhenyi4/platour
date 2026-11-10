@@ -1,0 +1,12 @@
+# Qwen3.5 capabilities from main's training environment, independently of GPU count.
+# Install after the release's Torch/Transformers/FLA environment.
+# causal-conv1d is installed separately from an ABI-matched upstream wheel.
+flash-linear-attention==0.5.2
+peft==0.19.1
+datasets==5.1.0
+pandas==3.0.6
+wandb==0.30.0
+setuptools==84.0.0
+wheel==0.48.0
+ninja==1.13.2
+pip>=24,<27

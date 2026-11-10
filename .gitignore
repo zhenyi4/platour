@@ -1,0 +1,29 @@
+__pycache__/
+*.py[cod]
+build/
+*.egg-info/
+*.log
+.env
+.env.*
+wandb/
+outputs/
+.tools/
+logs/
+models/*.safetensors
+models/.cache/
+checkpoints/
+*.pt
+*.pending
+*.copying
+.native-wheel-audit-*/
+
+# Reconstructed DeepCoder judge assets stay outside the release.
+data/qwen35/deepcoder/train_val_cases_*.tar.zst
+
+# Published task payloads are restored from Hugging Face, never committed.
+data/qwen3/*/*.jsonl
+data/qwen35/**/*.jsonl
+data/qwen35/**/*.parquet
+data/**/.cache/
+data/it/
+/it-inputs/

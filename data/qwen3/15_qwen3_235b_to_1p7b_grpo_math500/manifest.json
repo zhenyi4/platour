@@ -1,0 +1,32 @@
+{
+  "experiment_id": 15,
+  "task": "math500",
+  "method": "grpo",
+  "sender": "Qwen3-235B-A22B-FP8",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 7000,
+    "validation": 500,
+    "test": 500
+  },
+  "sha256": {
+    "train": "854fedaa6b4b251580590862caa9d6f454724147a4879f2ae3cfcfaf9ccbb83c",
+    "validation": "a87153c419bc4b354c4b43df9354a5b70e5db29b6e414c781dd3f1f7eaee64a0",
+    "test": "38451b28cdea6ae501f46ae8c5193a82dac00a9a452588bef29877b7731c4f98"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "161f71962f21063fc57b992311e83bc4d39a12e401898d097dbfca4eea497134",
+    "signed_test_input_sha256": "814b5618e6f5c233085fe8965b5e1779ef8e9aa8f5f567acde4fda69a80cc5c9"
+  },
+  "validation_split": {
+    "policy": "published_train_holdout_v2",
+    "seed": 42,
+    "source": "original TRAIN only",
+    "source_train_sha256": "e2c96f94a585f36f1ee7b5f5e4aa543ec32aa79ab5a995d2b6c69a4ae419d741",
+    "source_revision": "7081b1d1fdc2bcb47170ae6c717a6c2482f9b1eb",
+    "original_train_count": 7500,
+    "validation_count": 500,
+    "test_unchanged": true
+  }
+}

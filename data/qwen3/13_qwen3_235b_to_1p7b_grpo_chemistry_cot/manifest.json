@@ -1,0 +1,32 @@
+{
+  "experiment_id": 13,
+  "task": "chemistry_cot",
+  "method": "grpo",
+  "sender": "Qwen3-235B-A22B-FP8",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 1680,
+    "validation": 210,
+    "test": 210
+  },
+  "sha256": {
+    "train": "045556e26bd887fe6cadf5fdb1e2393405a67eb39f62ea39f01368fe9851e66c",
+    "validation": "8c1785733af18c0e7867dda1cc5053df393f804e2b6cc0230e247b24816a376d",
+    "test": "c115dfe3978c082a909ac64cd106dc318230063888c6c75a905c9ab20fabbb2d"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "60a4b8014f5ccd6ebda9608365fd53db5d86026979a69bea48e5330418f78fa6",
+    "signed_test_input_sha256": "099b3c0f834667d827357e444340e28cb42fb44c617add71f52a212c32d95ff6"
+  },
+  "validation_split": {
+    "policy": "published_train_holdout_v2",
+    "seed": 42,
+    "source": "original TRAIN only",
+    "source_train_sha256": "3a9bb313b5e9f9dee62cc59278e3fd70baf16e18293245f8174dac689e963cd5",
+    "source_revision": "7081b1d1fdc2bcb47170ae6c717a6c2482f9b1eb",
+    "original_train_count": 1890,
+    "validation_count": 210,
+    "test_unchanged": true
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "benchmark": {
+    "aime": {
+      "original_sha256": "3dea4608bcee4022d06d49f1f023794b5764724a0198f26695e2ba0ba5add954",
+      "rows": 135,
+      "sha256": "7abf38069ab7869a15b3a7231fe30fb6ce6cddba91002c1a72d031d3d2f53219"
+    },
+    "hmmt": {
+      "original_sha256": "d9146b5975aebd204270ccac4b9a4e22512ac0d0c16b44920fdbfaf8a46091c3",
+      "rows": 60,
+      "sha256": "41ba39d3c5f499fd26fb60b323b4a6f87c84c0447a7433f9e15dad68c5cfd977"
+    },
+    "humaneval": {
+      "original_source_sha256": "d1b5258081a34fc5e1290bdb6d51b75b0569b5f9e7fd62664ecabe9120157d29",
+      "rows": 164,
+      "sha256": "87730a855620be279b5aa5b5203e305bf49799b00f1d33824c1b34847ce2f36f"
+    },
+    "humaneval_template_adapted": {
+      "original_sha256": "837dbbef4829d6b1758bb382cf1236bac7ee5283aab1384971a155030da116d4",
+      "rows": 164,
+      "sha256": "009337570289320102f4316452a7e87bf3dd9500817bf1f2f6ad958159a9ecdd"
+    },
+    "imo": {
+      "original_sha256": "79554245c9706e8f8218db00ea8ef284b2d9e7c59a4cade9f535fbbea8608709",
+      "rows": 400,
+      "sha256": "4327145c167fa975a61b7d0157be748ba929b1b8a80ef0132ac4d8138a20c955"
+    },
+    "lcb": {
+      "original_source_sha256": "d1b5258081a34fc5e1290bdb6d51b75b0569b5f9e7fd62664ecabe9120157d29",
+      "rows": 175,
+      "sha256": "fd678f414f64e7bb5bc4649ee2158c7ae9d7fb0f4d680e3d4833265ee1cf379d"
+    },
+    "mbpp": {
+      "original_source_sha256": "d1b5258081a34fc5e1290bdb6d51b75b0569b5f9e7fd62664ecabe9120157d29",
+      "rows": 500,
+      "sha256": "25f9ce53c4bc79223743e43d89e92442317c906a870d2664e2a4eb1ad22a0943"
+    },
+    "mbpp_template_adapted": {
+      "original_sha256": "14c80768207e0c1fbf43eff63511916714291a5363c74d7d518c11cb39197dfc",
+      "rows": 500,
+      "sha256": "d90cbab9d122f0d753e233b82d900363de1f7e95a33e11ce39740c6639de757c"
+    }
+  },
+  "dapo": {
+    "train": {
+      "original_sha256": "8a94a7b7682985e57dbc3bd71757db6f69ea59b1ab1659e6ae0c3bca96165369",
+      "parquet_sha256": "e4881fbc5197c4a9a3900e403c44cf810fc51c28b23d464a239eb61635eea403",
+      "rows": 16891,
+      "sha256": "65e7062321b83acd823d0f46ceaee8470657fb7593dc6e5f96ac187dddd04e52"
+    },
+    "validation": {
+      "original_sha256": "16374818b28dcae9f362896473fd6176c680478138c201c5a52f1e836e6ac37f",
+      "parquet_sha256": "53f67802cea9ba87a2b9c9e695a3a3f0c1c07ff9970c236806e44066d11fddbc",
+      "rows": 500,
+      "sha256": "8102875352847d0fa2709e7e5ea962360548d65e839e3b3e18da94b34fbb7141"
+    }
+  },
+  "deepcoder": {
+    "train": {
+      "original_sha256": "5c480c545c36148649cc949361b6d0f034e43efcae2dcb06174e208b0996d3ba",
+      "rows": 18873,
+      "sha256": "733eb45d678e259a8b412fdf531b4ecc9c7d05e77f985f361d2a349abada363a"
+    },
+    "validation": {
+      "original_sha256": "910182b928ee5b67205a5f09ed5b076975a95d8af16d0a66861e33427d2dcefa",
+      "rows": 201,
+      "sha256": "7b5246c00ffcc6a7b40b24ce577e81e5e258cb233e6da97cfdf628602f784d93"
+    }
+  },
+  "format": "public original prompt token IDs and gold, no plaintext system messages",
+  "samples": {
+    "identity": "Original train/validation judge.sample_sha256 per record; obtain the pinned public unit tests independently.",
+    "upstream": "agentica-org/DeepCoder-Preview-Dataset",
+    "revision": "177913a7bd43791646ef6a43645caa3c871ab3db",
+    "reconstruction": "python -m qwen35.data --output <new-case-directory>",
+    "serialization": "UTF-8 nested JSON, ensure_ascii=False, inputs/outputs/fn_name order, trailing LF",
+    "files": {
+      "lcbv5/train-00000-of-00011.parquet": {
+        "size": 53535110,
+        "sha256": "f4ec44ee01749e8875cc5cf6d3e21b79d8a82ec2995563fda71edd8dbe1bd537",
+        "rows": 55
+      },
+      "lcbv5/train-00001-of-00011.parquet": {
+        "size": 37928750,
+        "sha256": "59a0f138da6162d756e1d922ff579694630e361cfb942ef2a078d3ed457d76db",
+        "rows": 55
+      },
+      "lcbv5/train-00002-of-00011.parquet": {
+        "size": 40140243,
+        "sha256": "ae72c8aa34ec6e7b0cc28ac0efe630e1f89c10b72da1014f4adea003288946db",
+        "rows": 55
+      },
+      "lcbv5/train-00003-of-00011.parquet": {
+        "size": 296435845,
+        "sha256": "d34cfdaf7058c414d4912630a0f92ca75f95bd565509c0b150c2332aaf77c664",
+        "rows": 55
+      },
+      "lcbv5/train-00004-of-00011.parquet": {
+        "size": 372806027,
+        "sha256": "25d683b93d92ed153e02b305b753054ff719422cde2a415b98c69430923d78aa",
+        "rows": 55
+      },
+      "lcbv5/train-00005-of-00011.parquet": {
+        "size": 351429234,
+        "sha256": "f67dc69c0192c8fa3932e84373330822a2a4e9effc2d74666db9f10a3628cf52",
+        "rows": 54
+      },
+      "lcbv5/train-00006-of-00011.parquet": {
+        "size": 358754566,
+        "sha256": "0734608d79b03298796cd863c7f3c3ee0d00ab8871a7cfedacee521fd1c59931",
+        "rows": 54
+      },
+      "lcbv5/train-00007-of-00011.parquet": {
+        "size": 674768191,
+        "sha256": "e33ebcfabfbd9d79ad8adb45b825e5dfbb93b6701f15b05999aff30b6a32ef34",
+        "rows": 54
+      },
+      "lcbv5/train-00008-of-00011.parquet": {
+        "size": 405693726,
+        "sha256": "379dc7f79d47d2a8afb3799f40b2f92faa80837e28d617bd6f5b6187a1988f98",
+        "rows": 54
+      },
+      "lcbv5/train-00009-of-00011.parquet": {
+        "size": 459753970,
+        "sha256": "7524f6778f50515db9a73d31c554d6d5f6f7949f36d90f09c45625efa4b60767",
+        "rows": 54
+      },
+      "lcbv5/train-00010-of-00011.parquet": {
+        "size": 344511343,
+        "sha256": "bf577ff738ca370ba75b7382a24c3abaa89fb55b5b403775c381694da45b4834",
+        "rows": 54
+      },
+      "primeintellect/train-00000-of-00005.parquet": {
+        "size": 471433458,
+        "sha256": "a1efc9d5e9eb6a9977576b08e5349758c8b139131ea5d13ef5c390f2a21db538",
+        "rows": 3251
+      },
+      "primeintellect/train-00001-of-00005.parquet": {
+        "size": 154602996,
+        "sha256": "2a645ca9e77976f49699ad9c25d79a697203e8811b0887ae256e7301d3e72681",
+        "rows": 3251
+      },
+      "primeintellect/train-00002-of-00005.parquet": {
+        "size": 109141620,
+        "sha256": "2bd0cc7207fa0aad722cc21a275afd777ab1debb318c4b9a9eccb18f7fee32f0",
+        "rows": 3250
+      },
+      "primeintellect/train-00003-of-00005.parquet": {
+        "size": 218648455,
+        "sha256": "4503d28636d63dab88e4a07a54b4a8257c9ad2e1663e8cdcb1216e2306550427",
+        "rows": 3250
+      },
+      "primeintellect/train-00004-of-00005.parquet": {
+        "size": 205323005,
+        "sha256": "b1148bc2f0939843d500e43668e643c619a67f17797358a1ddf8e33c9782a545",
+        "rows": 3250
+      },
+      "taco/train-00000-of-00004.parquet": {
+        "size": 207619655,
+        "sha256": "6e666b446c9feb6232f29a5c843883caba108398981ea25c3c72f02ebdda7eb6",
+        "rows": 1859
+      },
+      "taco/train-00001-of-00004.parquet": {
+        "size": 178070052,
+        "sha256": "594adb3eaea2b813e1b42ca88890e5bf9e70a64b43d11d27d56554ce4a0bd889",
+        "rows": 1859
+      },
+      "taco/train-00002-of-00004.parquet": {
+        "size": 188905427,
+        "sha256": "b9c8fb5788bc3b80ce31a78b9ef7e57ee1231d1d4c423d157b7a3b9a9901e481",
+        "rows": 1859
+      },
+      "taco/train-00003-of-00004.parquet": {
+        "size": 287699931,
+        "sha256": "920c612796225d328e4291a8c825bea516c170eb16d97c8bab043026686af14b",
+        "rows": 1859
+      }
+    }
+  },
+  "test_seed": "1234 + number_of_samples * original_index + sample_index",
+  "train_questions": {
+    "dapo": 16891,
+    "deepcoder": 18873
+  },
+  "train_seed": 42,
+  "validation_questions": {
+    "dapo": 500,
+    "deepcoder": 201
+  }
+}

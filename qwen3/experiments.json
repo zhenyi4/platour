@@ -1,0 +1,32 @@
+{
+  "sft": {
+    "method": "sft", "layer_mapping": "last_aligned", "batch_size": 64,
+    "learning_rate": 0.0001, "eval_sampling": {"temperature": 0.7, "top_p": 0.8, "top_k": 20}
+  },
+  "grpo": {
+    "method": "grpo", "layer_mapping": "uniform_endpoints", "group_size": 8,
+    "micro_batch": 1, "learning_rate": 0.00001, "warmup_steps": 0,
+    "train_sampling": {"temperature": 1.0, "top_p": 1.0, "top_k": -1},
+    "eval_sampling": {"temperature": 0.7, "top_p": 0.8, "top_k": 20}
+  },
+  "experiments": [
+    {"id": 1, "sender": "Qwen3-235B-A22B-FP8", "task": "arc_c", "method": "sft", "train_examples": 1107, "micro_batch": 8, "steps_per_epoch": 18, "total_steps": 54, "warmup_steps": 6, "response_cap": 2048, "eval_samples": 1},
+    {"id": 2, "sender": "Qwen3-235B-A22B-FP8", "task": "mmlu_redux", "method": "sft", "train_examples": 9900, "micro_batch": 8, "steps_per_epoch": 155, "total_steps": 465, "warmup_steps": 46, "response_cap": 64, "eval_samples": 1},
+    {"id": 3, "sender": "Qwen3-235B-A22B-FP8", "task": "chemistry_no_cot", "method": "sft", "train_examples": 1871, "micro_batch": 8, "steps_per_epoch": 30, "total_steps": 90, "warmup_steps": 9, "response_cap": 64, "eval_samples": 1},
+    {"id": 4, "sender": "Qwen3-235B-A22B-FP8", "task": "chemistry_cot", "method": "sft", "train_examples": 1871, "micro_batch": 2, "steps_per_epoch": 30, "total_steps": 90, "warmup_steps": 9, "response_cap": 2048, "eval_samples": 8},
+    {"id": 5, "sender": "Qwen3-235B-A22B-FP8", "task": "gsm8k", "method": "sft", "train_examples": 7398, "micro_batch": 2, "steps_per_epoch": 116, "total_steps": 348, "warmup_steps": 35, "response_cap": 2048, "eval_samples": 2},
+    {"id": 6, "sender": "Qwen3-235B-A22B-FP8", "task": "math500", "method": "sft", "train_examples": 7425, "micro_batch": 1, "steps_per_epoch": 117, "total_steps": 351, "warmup_steps": 35, "response_cap": 4096, "eval_samples": 4},
+    {"id": 7, "sender": "Qwen3-8B", "task": "arc_c", "method": "sft", "train_examples": 1107, "micro_batch": 8, "steps_per_epoch": 18, "total_steps": 54, "warmup_steps": 6, "response_cap": 2048, "eval_samples": 1},
+    {"id": 8, "sender": "Qwen3-8B", "task": "mmlu_redux", "method": "sft", "train_examples": 9900, "micro_batch": 8, "steps_per_epoch": 155, "total_steps": 465, "warmup_steps": 46, "response_cap": 64, "eval_samples": 1},
+    {"id": 9, "sender": "Qwen3-8B", "task": "chemistry_no_cot", "method": "sft", "train_examples": 1871, "micro_batch": 8, "steps_per_epoch": 30, "total_steps": 90, "warmup_steps": 9, "response_cap": 64, "eval_samples": 1},
+    {"id": 10, "sender": "Qwen3-8B", "task": "chemistry_cot", "method": "sft", "train_examples": 1871, "micro_batch": 8, "steps_per_epoch": 30, "total_steps": 90, "warmup_steps": 9, "response_cap": 2048, "eval_samples": 8},
+    {"id": 11, "sender": "Qwen3-8B", "task": "gsm8k", "method": "sft", "train_examples": 7398, "micro_batch": 8, "steps_per_epoch": 116, "total_steps": 348, "warmup_steps": 35, "response_cap": 2048, "eval_samples": 2},
+    {"id": 12, "sender": "Qwen3-8B", "task": "math500", "method": "sft", "train_examples": 7425, "micro_batch": 1, "steps_per_epoch": 117, "total_steps": 351, "warmup_steps": 35, "response_cap": 4096, "eval_samples": 4},
+    {"id": 13, "sender": "Qwen3-235B-A22B-FP8", "task": "chemistry_cot", "method": "grpo", "initialization": "zero", "train_examples": 1890, "batch_size": 32, "steps_per_epoch": 60, "total_steps": 180, "response_cap": 2048, "eval_samples": 8, "eval_steps": [30, 60, 90, 120, 150, 180]},
+    {"id": 14, "sender": "Qwen3-235B-A22B-FP8", "task": "gsm8k", "method": "grpo", "train_examples": 7473, "batch_size": 64, "steps_per_epoch": 117, "total_steps": 351, "response_cap": 2048, "eval_samples": 2, "validation_samples": 4, "eval_steps": [58, 117, 176, 234, 292, 351]},
+    {"id": 15, "sender": "Qwen3-235B-A22B-FP8", "task": "math500", "method": "grpo", "train_examples": 7500, "batch_size": 64, "steps_per_epoch": 118, "total_steps": 354, "response_cap": 4096, "eval_samples": 4, "eval_steps": [59, 118, 177, 236, 295, 354]},
+    {"id": 16, "sender": "Qwen3-8B", "task": "chemistry_cot", "method": "grpo", "train_examples": 1890, "batch_size": 32, "steps_per_epoch": 60, "total_steps": 180, "response_cap": 2048, "eval_samples": 8, "eval_steps": [30, 60, 90, 120, 150, 180]},
+    {"id": 17, "sender": "Qwen3-8B", "task": "gsm8k", "method": "grpo", "train_examples": 7473, "batch_size": 64, "steps_per_epoch": 117, "total_steps": 351, "response_cap": 2048, "eval_samples": 2, "validation_samples": 4, "eval_steps": [58, 117, 176, 234, 292, 351]},
+    {"id": 18, "sender": "Qwen3-8B", "task": "math500", "method": "grpo", "train_examples": 7500, "batch_size": 64, "steps_per_epoch": 118, "total_steps": 354, "response_cap": 4096, "eval_samples": 4, "eval_steps": [59, 118, 177, 236, 295, 354]}
+  ]
+}

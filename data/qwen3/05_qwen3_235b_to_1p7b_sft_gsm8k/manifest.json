@@ -1,0 +1,24 @@
+{
+  "experiment_id": 5,
+  "task": "gsm8k",
+  "method": "sft",
+  "sender": "Qwen3-235B-A22B-FP8",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 7398,
+    "validation": 75,
+    "test": 1319
+  },
+  "sha256": {
+    "train": "a842778f1fb892e58db2ee7ab52a7a534dfa37663175ad554dd63534cb181148",
+    "validation": "c8a4294d6f6f36238a60295d7ebd3907a1d736a18f86129c4076ec7ec9d4bbac",
+    "test": "b017ff9bab8b6ac2af0e6fba210e4f4d884cd67adb5ceba4e2779d65355a130f",
+    "split": "bc5cb97f159bad0975eb1b47ce24d7aed4939f6cbbcdd67dd8fe912f32ceb2c0"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "a197d364eacf54888bcd807ecba7162e920c0d47c314d42b1c68795e8537bc80",
+    "signed_split_sha256": "07b55104e4f4747410d23f30dd89c83d1d6f5149e7f4bc03cc5e1a2eea5b08d9",
+    "signed_test_input_sha256": "9986a2b4d1dc7e61b96d249437caaa7c03452e2fcb75fdb93fddaf32b075dce9"
+  }
+}

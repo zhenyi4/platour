@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "platour-exps"
+version = "0.2.0"
+description = "PLatour PACT experiments and Qwen3.5 adaptation-control reference"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+  "torch>=2.10,<3",
+  "transformers>=5.3,<6",
+  "accelerate>=1.15,<2",
+  "safetensors>=0.8,<1",
+  "huggingface-hub>=1.0,<2",
+  "math-verify>=0.9,<1",
+  "pyarrow>=18,<30",
+  "fla-core>=0.5.2,<1",
+  # fla's gated-delta backward on Hopper needs TileLang unless Triton >= 3.7.1.
+  "tilelang>=0.1.15,<0.2; platform_system == 'Linux'",
+  # Hub kernel loader for the FP8 sender experts (Qwen3-235B, Qwen3.5-397B).
+  "kernels>=0.16,<0.17",
+]
+
+[project.optional-dependencies]
+native-train = ["wandb>=0.30,<1"]
+
+[project.scripts]
+platour-exps = "platour_exps:main"
+
+[tool.setuptools]
+py-modules = ["platour_exps", "platour_api", "pact_check", "platour_data", "platour_it", "training_protocol"]
+
+[tool.setuptools.package-data]
+qwen3 = ["experiments.json", "it_release.json", "native_protocols.json", "native_source_sha256.json", "native_reference/**/*.py", "native_reference/**/LICENSE"]
+qwen35 = ["native_protocols.json", "native_bridge_protocols.json", "native_bridge_source_sha256.json", "native_math20_source_sha256.json", "native_source_sha256.json", "native_random_source_sha256.json", "native_full_source_sha256.json", "native_lora_source_sha256.json", "native_deepcoder_source_sha256.json", "native_multinode_protocols.json", "lcb_v6_cases_sha256.json", "lcb_sandbox.Dockerfile", "native_reference/**/*.py", "native_reference/**/LICENSE"]
+
+[tool.setuptools.packages.find]
+include = ["qwen3*", "qwen35*"]

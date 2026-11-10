@@ -1,0 +1,996 @@
+{
+  "20": {
+    "original_protocol_sha256": "207d08cf935b487fb9eff2ccc81eeba99d189e86ac8d4fb41f244c733e985398",
+    "protocol": {
+      "activation_checkpointing": "non-reentrant per-block forward; bridge injection outside replay; eval mode retained",
+      "advantage_epsilon": 1e-06,
+      "advantage_std_correction": 1,
+      "answer_scoring_version": "answer_math_v2",
+      "attention_layer_pairs": [
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 0,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 0
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 1,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 2
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 2,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 4
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 3,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 7
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 4,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 8
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 5,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 10
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 6,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 11
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 7,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 11
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 8,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 15
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 9,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 17
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 10,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 19
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 11,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 19
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 12,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 23
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 13,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 25
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 14,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 27
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 15,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 27
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 16,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 30
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 17,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 32
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 18,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 34
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 19,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 35
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 20,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 38
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 21,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 40
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 22,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 42
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 23,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 43
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 24,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 46
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 25,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 48
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 26,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 49
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 27,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 51
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 28,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 53
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 29,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 55
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 30,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 57
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 31,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 59
+        }
+      ],
+      "attention_types_preserved": false,
+      "batch_size": 64,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "checkpoint_steps": [
+        33,
+        66,
+        99,
+        132,
+        165,
+        198,
+        231,
+        264
+      ],
+      "clip_ratio": 0.2,
+      "clip_ratio_c": 3.0,
+      "constant_gate": 1.0,
+      "cross_attention_mapping_allowed": true,
+      "data_order": "Fresh torch.randperm(16891), seed 42 + zero_based_epoch",
+      "dataset": "dapo",
+      "decoder_gpu_ids": [
+        0,
+        4
+      ],
+      "early_stop": {
+        "clip_abs": 0.05,
+        "clip_ratio": 2.0,
+        "interval": 33,
+        "max_steps": 264,
+        "metric": "avg@4",
+        "patience": 1000000000,
+        "rule": "Stop after `patience` consecutive evaluations that are not strictly better than the best avg@4 or whose clipping rate breaches the guard; best-step checkpoint is retained",
+        "samples_per_question": 4,
+        "skip_initial_eval": false
+      },
+      "enable_thinking": false,
+      "end_policy": "One natural 16891-question epoch=264 optimizer updates; not infinite dataset replays",
+      "entropy_coefficient": 0.0,
+      "epochs": 1,
+      "eval_coverage": "500 questions x4 at 0 and [33, 66, 99, 132, 165, 198, 231, 264]",
+      "eval_metric": "Last Answer match, whole expression verified; clipped responses zero; val avg@4",
+      "eval_prompts_sha256": "16374818b28dcae9f362896473fd6176c680478138c201c5a52f1e836e6ac37f",
+      "eval_questions": 500,
+      "eval_samples": 4,
+      "eval_sampling": {
+        "frequency_penalty": 0.0,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
+        "temperature": 1.0,
+        "top_k": 20,
+        "top_p": 0.95
+      },
+      "eval_sampling_default_since": "evaluation default: top_p .95, top_k 20, presence penalty 1.5",
+      "eval_seed": "1234 + 4*index + sample_index",
+      "eval_seed_stride": 4,
+      "eval_selection": "Validation best avg@4; no test-based selection",
+      "eval_source_sha256": "53f67802cea9ba87a2b9c9e695a3a3f0c1c07ff9970c236806e44066d11fddbc",
+      "eval_steps": [
+        33,
+        66,
+        99,
+        132,
+        165,
+        198,
+        231,
+        264
+      ],
+      "evaluation_backend": "HF bridge prefill + native vLLM hybrid-cache decode",
+      "evaluations_per_epoch": 8,
+      "examples_per_epoch": 16891,
+      "filter": "None; retain clipped, incorrect and empty-gold training samples",
+      "format_penalty": true,
+      "formula": "h_s[i] + P_i(h_t[layer_map[i]])",
+      "fp8_kernel_revision": "8c178950e8710e26a2210e4e909cd02dc16c8715",
+      "frozen_backbones": true,
+      "full_layer_constraint": true,
+      "gpu_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "gpu_index_scope": "node-local; trainer output/RNG ranks are global",
+      "gpus_per_node": 8,
+      "grad_clip": 1.0,
+      "group_constraint": false,
+      "group_size": 8,
+      "hidden_space": "decoder block input before RMSNorm",
+      "initial_eval_step": 0,
+      "initialization": "zero",
+      "injection": "prompt[:-1] only",
+      "layer_map": [
+        0,
+        2,
+        4,
+        7,
+        8,
+        10,
+        11,
+        11,
+        15,
+        17,
+        19,
+        19,
+        23,
+        25,
+        27,
+        27,
+        30,
+        32,
+        34,
+        35,
+        38,
+        40,
+        42,
+        43,
+        46,
+        48,
+        49,
+        51,
+        53,
+        55,
+        57,
+        59
+      ],
+      "layer_mapping": "equal_width_full_to_full_monotone_b",
+      "learning_rate": 1e-05,
+      "local_world_size": 2,
+      "loss_agg_mode": "seq-mean-token-mean",
+      "loss_distribution": "Unfiltered actor log probabilities at sampled response tokens",
+      "mapping_group_size": 1,
+      "mapping_rule": "endpoint-aligned round-half-up; snap student full to nearest teacher full, ties shallower; lower preceding linear targets at inversions to make the mapping nondecreasing",
+      "math_verify_boxed_only": false,
+      "max_prompt_length": 2048,
+      "max_response_length": 16384,
+      "maximum_steps_policy": 264,
+      "method": "grpo",
+      "micro_batch": 1,
+      "monotone_constraint": true,
+      "multinode_options": {
+        "dataset": "dapo",
+        "epochs": 1,
+        "eval_interval": 33,
+        "gpus_per_node": 8,
+        "learning_rate": 1e-05,
+        "max_steps": 264,
+        "memory_fraction": 0.22,
+        "nnodes": 2,
+        "patience": 1000000000,
+        "project": "platour",
+        "teacher": "397b"
+      },
+      "nearest_full_tie_break": "shallower",
+      "nnodes": 2,
+      "no_patience_early_stopping": true,
+      "norm_adv_by_std": true,
+      "objective": "GRPO binary DAPO reward; group-normalized advantage",
+      "old_cap132_cancelled_by_user": true,
+      "old_policy": "actor log_probs.detach(), one on-policy minibatch and one PPO epoch (VERL default)",
+      "optimizer": "AdamW",
+      "ppo_epochs": 1,
+      "ppo_mini_batch_size_prompts": 64,
+      "ppo_mini_batch_size_responses": 512,
+      "previous_coding_checkpoint_loaded": false,
+      "projection_dtype": "float32",
+      "responses_per_full_batch": 512,
+      "resume": false,
+      "reward": "VERL math-verify binary acc with format penalty: 0 if finish_reason==length or the last non-empty line is not \"Answer: X\"; otherwise only that line is verified. Validation is unpenalised.",
+      "rollout_correction": "detached token-level IS, cap 2; native vLLM sampled log probabilities",
+      "sampling_source": "https://huggingface.co/Qwen/Qwen3.5-4B#using-qwen35-via-the-chat-completions-api",
+      "save_evaluation_bridges": false,
+      "scheduler": "constant",
+      "smoke_full_batch": true,
+      "source_manifest_sha256": "e98d2453656bdbe2f1a2bdb02616fd8025ff6bd57ce77a6cdbd6a6bc5ee05857",
+      "source_sha256": "e4881fbc5197c4a9a3900e403c44cf810fc51c28b23d464a239eb61635eea403",
+      "steps_per_epoch": 264,
+      "stress_all_ranks": true,
+      "student": "Qwen3.5-4B",
+      "student_activation_checkpointing": true,
+      "teacher": "Qwen3.5-397B-A17B",
+      "teacher_checkpoint_revision": "ea5b4f81096f3901c91dea97f81324302495781d",
+      "teacher_gpu_groups": [
+        [
+          0,
+          1,
+          2,
+          3
+        ],
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "teacher_hidden_transfer_dtype": "bfloat16",
+      "teacher_key": "397b",
+      "teacher_layer_split": [
+        12,
+        16,
+        16,
+        16
+      ],
+      "teacher_model_parallel_size": 4,
+      "teacher_precision": "Official FP8 block128 weights/dynamic activations; BF16 hidden transfer; no CPU offload",
+      "teacher_quantization": {
+        "act_per_tensor": false,
+        "activation_scheme": "dynamic",
+        "quant_method": "fp8",
+        "weight_block_size": [
+          128,
+          128
+        ],
+        "weight_per_tensor": false
+      },
+      "teacher_response_forward": false,
+      "teacher_weight_precision": "fp8",
+      "test_max_new_tokens": 32768,
+      "test_samples": {
+        "aime": 16,
+        "hmmt": 16,
+        "imo": 4
+      },
+      "total_evaluations": 9,
+      "total_gpus": 16,
+      "total_steps": 264,
+      "train_prompts_sha256": "8a94a7b7682985e57dbc3bd71757db6f69ea59b1ab1659e6ae0c3bca96165369",
+      "train_sampling": {
+        "frequency_penalty": 0.0,
+        "min_p": 0.0,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.0,
+        "temperature": 1.0,
+        "top_k": -1,
+        "top_p": 1.0
+      },
+      "train_seed_formula": "42 + 100000*zero_based_epoch + 1000*global_step + 8*question_index + sample_index",
+      "trainable_parameters": 335544320,
+      "training_rollout_backend": "HF bridge prefill + native vLLM hybrid-cache decode",
+      "training_task_independent": true,
+      "use_kl_in_reward": false,
+      "use_kl_loss": false,
+      "use_mse_projector_weights": false,
+      "val_metric": "answer",
+      "validation_before_training": true,
+      "vllm_decode_batch_size": 0,
+      "vllm_max_model_len": 18432,
+      "vllm_max_num_seqs": 16,
+      "vllm_memory_fraction": 0.22,
+      "vllm_replicas": 4,
+      "vllm_tensor_parallel_size": 1,
+      "wandb_enabled": false,
+      "wandb_mode": "disabled",
+      "wandb_project": "disabled",
+      "wandb_run_name": "platour_native_20_fresh",
+      "warmup_steps": 0,
+      "weight_decay": 0.0,
+      "world_size": 4
+    },
+    "source": "Original verified science protocol; host paths, run evidence and W&B identity removed"
+  },
+  "25": {
+    "original_protocol_sha256": "57c186cb226eed6e055614325116b5a31c1fa3f13d1df14eacb9c37e8277aa68",
+    "protocol": {
+      "activation_checkpointing": "non-reentrant per-block forward; bridge injection outside replay; eval mode retained",
+      "advantage_epsilon": 1e-06,
+      "advantage_std_correction": 1,
+      "attention_layer_pairs": [
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 0,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 0
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 1,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 2
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 2,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 4
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 3,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 7
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 4,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 8
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 5,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 10
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 6,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 11
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 7,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 11
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 8,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 15
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 9,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 17
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 10,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 19
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 11,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 19
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 12,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 23
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 13,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 25
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 14,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 27
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 15,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 27
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 16,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 30
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 17,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 32
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 18,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 34
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 19,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 35
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 20,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 38
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 21,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 40
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 22,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 42
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 23,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 43
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 24,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 46
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 25,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 48
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 26,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 49
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 27,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 51
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 28,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 53
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 29,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 55
+        },
+        {
+          "student_attention": "linear_attention",
+          "student_layer": 30,
+          "teacher_attention": "linear_attention",
+          "teacher_layer": 57
+        },
+        {
+          "student_attention": "full_attention",
+          "student_layer": 31,
+          "teacher_attention": "full_attention",
+          "teacher_layer": 59
+        }
+      ],
+      "attention_types_preserved": false,
+      "batch_size": 64,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "checker_policy_sha256": "25058f09a45edfc5ad319743206aa4668824b4ed20fb5266a49289559cfe42d6",
+      "checkpoint_steps": [
+        0,
+        42,
+        84,
+        126,
+        168,
+        210,
+        252,
+        295
+      ],
+      "clip_ratio": 0.2,
+      "clip_ratio_c": 3.0,
+      "code_clip_abs": 0.35,
+      "code_clip_floor": 0.15,
+      "code_clip_ratio": 2.0,
+      "code_judge": {
+        "cpus": "1",
+        "image": "lcb-checker:local",
+        "image_id": "sha256:c620f366cb0a3a82143c15d5b367a9843539b2a8d2b501744f5e0ebd4d9d0b2e",
+        "lcb_test_timeout": 6,
+        "memory": "4g",
+        "pids": 64,
+        "program_timeout": 10
+      },
+      "constant_gate": 1.0,
+      "cross_attention_mapping_allowed": true,
+      "data_order": "Fresh torch.randperm(16891), seed 42 + zero_based_epoch",
+      "dataset": "deepcoder",
+      "decoder_gpu_ids": [
+        0,
+        4
+      ],
+      "diagnostic_full_validation": true,
+      "early_stop": {
+        "clip_abs": 0.35,
+        "clip_ratio": 2.0,
+        "clip_ratio_floor": 0.15,
+        "interval": 42,
+        "max_steps": 295,
+        "metric": "avg@16",
+        "minimum_steps": 0,
+        "patience": 2,
+        "rule": "Stop after two consecutive complete held-out DeepCoder avg@16 validations without guarded strict improvement; skip redundant step294, keep terminal295",
+        "samples_per_question": 16,
+        "skip_initial_eval": false,
+        "warmup_steps": 0
+      },
+      "early_stop_application": "monitor_only_before_step295; keep all held-out original 201x16 test responses",
+      "enable_thinking": false,
+      "engineering_rpc_timeout_seconds": 10800,
+      "entropy_coefficient": 0.0,
+      "epochs": 1,
+      "eval_coverage": "201 questions x16 at 0 and [42, 84, 126, 168, 210, 252, 295]",
+      "eval_metric": "avg@16 fully scored held-out filtered DeepCoder responses / 3216",
+      "eval_prompts_sha256": "910182b928ee5b67205a5f09ed5b076975a95d8af16d0a66861e33427d2dcefa",
+      "eval_questions": 201,
+      "eval_samples": 16,
+      "eval_sampling": {
+        "frequency_penalty": 0.0,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
+        "temperature": 1.0,
+        "top_k": 20,
+        "top_p": 0.95
+      },
+      "eval_sampling_default_since": "evaluation default: top_p .95, top_k 20, presence penalty 1.5",
+      "eval_seed": "1234 + 16*index + sample_index",
+      "eval_seed_stride": 16,
+      "eval_selection": "Validation best avg@16; no test-based selection",
+      "eval_source_sha256": "910182b928ee5b67205a5f09ed5b076975a95d8af16d0a66861e33427d2dcefa",
+      "eval_steps": [
+        42,
+        84,
+        126,
+        168,
+        210,
+        252,
+        295
+      ],
+      "evaluation_backend": "HF bridge prefill + native vLLM hybrid-cache decode",
+      "evaluations_per_epoch": 7,
+      "examples_per_epoch": 18873,
+      "filter": "None; retain clipped, incorrect and empty-gold training samples",
+      "formal_startup_checks": true,
+      "format_penalty": true,
+      "formula": "h_s[i] + P_i(h_t[layer_map[i]])",
+      "fp8_kernel_revision": "8c178950e8710e26a2210e4e909cd02dc16c8715",
+      "frozen_backbones": true,
+      "frozen_v9_protocol_sha256": "e2be6d2be928ee028a95e452266967d2373d2d6acd215379945409da5ae8f243",
+      "full_layer_constraint": true,
+      "full_test_benchmarks": [
+        "lcb",
+        "humaneval",
+        "mbpp"
+      ],
+      "gpu_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "gpu_index_scope": "node-local; trainer output/RNG ranks are global",
+      "gpus_per_node": 8,
+      "grad_clip": 1.0,
+      "group_constraint": false,
+      "group_size": 8,
+      "hard_cap_candidates": [
+        168,
+        210,
+        252,
+        295
+      ],
+      "hard_cap_selection_pending": "Current35B manual validated cap",
+      "hidden_space": "decoder block input before RMSNorm",
+      "initial_eval_step": 0,
+      "initialization": "zero",
+      "injection": "prompt[:-1] only",
+      "judge_backend": "deepcoder_shared_docker",
+      "judge_service_spec_id": "e2f9e92aa3ee5f31c06eeb8d04cd090fb6b66514ecad773cdb04612abb10fa0c",
+      "layer_map": [
+        0,
+        2,
+        4,
+        7,
+        8,
+        10,
+        11,
+        11,
+        15,
+        17,
+        19,
+        19,
+        23,
+        25,
+        27,
+        27,
+        30,
+        32,
+        34,
+        35,
+        38,
+        40,
+        42,
+        43,
+        46,
+        48,
+        49,
+        51,
+        53,
+        55,
+        57,
+        59
+      ],
+      "layer_mapping": "equal_width_full_to_full_monotone_b",
+      "learning_rate": 1e-05,
+      "local_world_size": 2,
+      "loss_agg_mode": "seq-mean-token-mean",
+      "loss_distribution": "Unfiltered actor log probabilities at sampled response tokens",
+      "mapping_group_size": 1,
+      "mapping_rule": "endpoint-aligned round-half-up; snap student full to nearest teacher full, ties shallower; lower preceding linear targets at inversions to make the mapping nondecreasing",
+      "max_num_seqs": 16,
+      "max_prompt_length": 2048,
+      "max_response_length": 16384,
+      "method": "grpo",
+      "micro_batch": 1,
+      "minimum_steps": 0,
+      "model": "Qwen3.5-4B",
+      "monotone_constraint": true,
+      "multinode_options": {
+        "dataset": "deepcoder",
+        "epochs": 1,
+        "eval_interval": 42,
+        "gpus_per_node": 8,
+        "learning_rate": 1e-05,
+        "max_steps": 295,
+        "memory_fraction": 0.22,
+        "nnodes": 2,
+        "patience": 2,
+        "project": "platour",
+        "teacher": "397b"
+      },
+      "nearest_full_tie_break": "shallower",
+      "nnodes": 2,
+      "non_validation_checkpoint_retention": 1,
+      "norm_adv_by_std": true,
+      "objective": "GRPO binary DAPO reward; group-normalized advantage",
+      "old_policy": "actor log_probs.detach(), one on-policy minibatch and one PPO epoch (VERL default)",
+      "optimizer": "AdamW",
+      "original_training_order_and_295_budget_preserved": true,
+      "original_v9_results_not_relabelled": true,
+      "per_step_checkpoints": true,
+      "ppo_epochs": 1,
+      "ppo_mini_batch_size_prompts": 64,
+      "ppo_mini_batch_size_responses": 512,
+      "previous_coding_checkpoint_loaded": false,
+      "previous_failed_v7_saved": true,
+      "projection_dtype": "float32",
+      "prompt_format": "Shared DeepCoder generic nonthinking Python prompt",
+      "recovery_variant": "v10_timeout_mask_full_epoch",
+      "replay_from_zero": true,
+      "responses_per_full_batch": 512,
+      "resume": false,
+      "reward": "All official cases of filtered DeepCoder question pass; format penalty on truncated train only",
+      "rollout_correction": "detached token-level IS, cap 2; native vLLM sampled log probabilities",
+      "sampling_source": "https://huggingface.co/Qwen/Qwen3.5-4B#using-qwen35-via-the-chat-completions-api",
+      "save_evaluation_bridges": false,
+      "scheduler": "constant",
+      "score_worker": "deepcoder_shared_scoring",
+      "smoke_full_batch": true,
+      "source_checkpoint_step": 231,
+      "source_manifest_sha256": "e926e3994ba91d44e2b00649342b432a4a318bffd02fc0a6007a8ddbd9185d18",
+      "source_sha256": "5c480c545c36148649cc949361b6d0f034e43efcae2dcb06174e208b0996d3ba",
+      "steps_per_epoch": 295,
+      "stress_all_ranks": true,
+      "student": "Qwen3.5-4B",
+      "student_activation_checkpointing": true,
+      "teacher": "Qwen3.5-397B-A17B",
+      "teacher_checkpoint_revision": "ea5b4f81096f3901c91dea97f81324302495781d",
+      "teacher_gpu_groups": [
+        [
+          0,
+          1,
+          2,
+          3
+        ],
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "teacher_hidden_transfer_dtype": "bfloat16",
+      "teacher_key": "397b",
+      "teacher_layer_split": [
+        12,
+        16,
+        16,
+        16
+      ],
+      "teacher_model_loaded": true,
+      "teacher_model_parallel_size": 4,
+      "teacher_precision": "fp8",
+      "teacher_quantization": {
+        "act_per_tensor": false,
+        "activation_scheme": "dynamic",
+        "quant_method": "fp8",
+        "weight_block_size": [
+          128,
+          128
+        ],
+        "weight_per_tensor": false
+      },
+      "teacher_response_forward": false,
+      "teacher_weight_precision": "fp8",
+      "terminal_validation_step": 295,
+      "test_max_model_len": 20480,
+      "test_max_new_tokens": 16384,
+      "test_samples": null,
+      "test_specs": {
+        "humaneval": {
+          "questions": 164,
+          "samples": 8
+        },
+        "lcb_v6": {
+          "questions": 175,
+          "samples": 8
+        },
+        "mbpp_full": {
+          "questions": 500,
+          "samples": 8
+        }
+      },
+      "test_total_responses": 6712,
+      "total_evaluations": 8,
+      "total_gpus": 16,
+      "total_steps": 295,
+      "train_prompts_sha256": "5c480c545c36148649cc949361b6d0f034e43efcae2dcb06174e208b0996d3ba",
+      "train_sampling": {
+        "frequency_penalty": 0.0,
+        "min_p": 0.0,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.0,
+        "temperature": 1.0,
+        "top_k": -1,
+        "top_p": 1.0
+      },
+      "train_seed_formula": "42 + 100000*epoch + 1000*global_step + 8*question_index + sample_index",
+      "trainable_parameters": 335544320,
+      "training_reward_policy": "512 generated, one or more infrastructure-unjudged replies excluded without fabricated reward; remaining seven in affected GRPO group normalized over seven",
+      "training_rollout_backend": "HF bridge prefill + native vLLM hybrid-cache decode",
+      "use_kl_in_reward": false,
+      "use_kl_loss": false,
+      "use_mse_projector_weights": false,
+      "user_approved_omitted_redundant_validation_step": 294,
+      "val_metric": "full",
+      "validation_before_training": true,
+      "vllm_decode_batch_size": 0,
+      "vllm_max_model_len": 18432,
+      "vllm_max_num_seqs": 16,
+      "vllm_memory_fraction": 0.22,
+      "vllm_replicas": 4,
+      "vllm_tensor_parallel_size": 1,
+      "wandb_enabled": false,
+      "wandb_mode": "disabled",
+      "wandb_project": "disabled",
+      "wandb_run_name": "platour_native_25_fresh",
+      "warmup_steps": 0,
+      "weight_decay": 0.0,
+      "world_size": 4
+    },
+    "source": "Original verified science protocol; host paths, run evidence and W&B identity removed"
+  }
+}

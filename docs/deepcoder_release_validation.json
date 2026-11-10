@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-06",
+  "base_branch": "platour-exps",
+  "base_commit": "5afd5928a61838baf7909b8cf308d7cf6f8fe074",
+  "release_branch": "platour-release",
+  "upstream_repo": "agentica-org/DeepCoder-Preview-Dataset",
+  "upstream_revision": "177913a7bd43791646ef6a43645caa3c871ab3db",
+  "upstream_files": 20,
+  "upstream_file_size_and_sha256_verified": true,
+  "rebuilt_cases": 19074,
+  "rebuilt_case_bytes": 8002867463,
+  "every_case_sha256_verified_during_rebuild": true,
+  "every_case_sha256_verified_by_independent_disk_read": true,
+  "by_source": {
+    "taco": 6805,
+    "primeintellect": 11689,
+    "lcbv5": 580
+  },
+  "train_questions": 18873,
+  "validation_questions": 201,
+  "archived_case_shards_removed_from_release": 8,
+  "tests": {
+    "tests_run": 125,
+    "failures": 0,
+    "errors": 0,
+    "skipped": [
+      {
+        "test": "test_cpu_and_cuda_kernel_bindings_alternate_within_one_process (test_qwen35.Qwen35CPUAndShapeTests.test_cpu_and_cuda_kernel_bindings_alternate_within_one_process)",
+        "reason": "CUDA kernel dependency fla is unavailable in this Mac test environment"
+      },
+      {
+        "test": "test_fp8_qwen35_sender_requires_cuda_and_pins_a_trusted_kernel (test_qwen35.Qwen35CPUAndShapeTests.test_fp8_qwen35_sender_requires_cuda_and_pins_a_trusted_kernel)",
+        "reason": "CUDA kernel dependency fla is unavailable in this Mac test environment"
+      }
+    ],
+    "success": true
+  },
+  "rebuild_command": "python -m qwen35.data --source-root <pinned-upstream-snapshot> --output <fresh-case-directory>",
+  "download_command": "python -m qwen35.data --output <fresh-case-directory>",
+  "frozen_prompt_files_changed": false
+}

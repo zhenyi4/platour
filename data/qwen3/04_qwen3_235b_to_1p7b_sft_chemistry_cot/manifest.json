@@ -1,0 +1,24 @@
+{
+  "experiment_id": 4,
+  "task": "chemistry_cot",
+  "method": "sft",
+  "sender": "Qwen3-235B-A22B-FP8",
+  "receiver": "Qwen3-1.7B",
+  "schema": "original public data and signed token IDs",
+  "counts": {
+    "train": 1871,
+    "validation": 19,
+    "test": 210
+  },
+  "sha256": {
+    "train": "414bebd8f90d0811ff2aedd53d66fb3a4a2a439857106b035c53893995b0664e",
+    "validation": "2a1ad552c9df20f96dd38d338497385263d764f327dbe225351e25218440278e",
+    "test": "c115dfe3978c082a909ac64cd106dc318230063888c6c75a905c9ab20fabbb2d",
+    "split": "d500ec9f448db47b37388a220031d5098504f3b3bc357fec6e66f5d4c3d69c01"
+  },
+  "provenance": {
+    "signed_train_input_sha256": "0abb7b0ba36f16097174b6ab536689be7fc74ad8694189d771dae33cc7dad553",
+    "signed_split_sha256": "c964e35e3f5d3b779deb430f0cb4afc781e0360036dc7d399ae26b862f6046f7",
+    "signed_test_input_sha256": "099b3c0f834667d827357e444340e28cb42fb44c617add71f52a212c32d95ff6"
+  }
+}
